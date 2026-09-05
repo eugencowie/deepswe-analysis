@@ -1,0 +1,50 @@
+# Spec: Subscription data
+
+Adds subscription-subsidised effective costs to the [leaderboard table](../leaderboard-table/spec.md): the SemiAnalysis tier figures, tier rows, the subsidisation maths, the access tag, and the struck-out API cost. Vocabulary: access route, access tag, tier, equivalent API spend, usage multiplier, subsidisation factor, API cost, effective cost in [docs/context.md](../../context.md).
+
+## Data file: `data/tiers.json`
+
+The SemiAnalysis figures, verbatim from the user:
+
+```json
+{
+  "source": "SemiAnalysis, transcribed by user 2026-08-20",
+  "tiers": [
+    { "id": "claude-pro",     "family": "claude",  "label": "Claude Pro",      "priceUsdPerMonth": 20,  "equivalentApiSpendUsdPerMonth": 400 },
+    { "id": "claude-max-5x",  "family": "claude",  "label": "Claude Max 5x",   "priceUsdPerMonth": 100, "equivalentApiSpendUsdPerMonth": 2000 },
+    { "id": "claude-max-20x", "family": "claude",  "label": "Claude Max 20x",  "priceUsdPerMonth": 200, "equivalentApiSpendUsdPerMonth": 8000 },
+    { "id": "chatgpt-plus",   "family": "chatgpt", "label": "ChatGPT Plus",    "priceUsdPerMonth": 20,  "equivalentApiSpendUsdPerMonth": 700 },
+    { "id": "chatgpt-pro-5x", "family": "chatgpt", "label": "ChatGPT Pro 5x",  "priceUsdPerMonth": 100, "equivalentApiSpendUsdPerMonth": 3500 },
+    { "id": "chatgpt-pro-20x","family": "chatgpt", "label": "ChatGPT Pro 20x", "priceUsdPerMonth": 200, "equivalentApiSpendUsdPerMonth": 14000 }
+  ]
+}
+```
+
+## Model mapping fields
+
+`family` and `usageMultiplier` in the [model mapping](../model-data/spec.md). Family membership asserts genuine subscription access (user's best knowledge of the plans, not research-verified). If a mapped model turns out to be API-only, flip its family to `none` — one-line fix.
+
+## Derivation rules
+
+Row expansion: entries whose family is claude or chatgpt get one row per tier of that family beside their API row. Current data: 62 entries → 62 API rows + (21 Claude entries + 20 ChatGPT entries) × 3 tiers = **185 rows**. (An earlier revision said 191 via 22 ChatGPT entries — that was an arithmetic error; the checked-in data and research capture both have 20.)
+
+Per row:
+
+- `subsidisationFactor` = `tier.priceUsdPerMonth / (tier.equivalentApiSpendUsdPerMonth × usageMultiplier)` (tier rows only). E.g. claude-pro = 0.05; for Fable 5, 20 / (400 × 0.5) = 0.10.
+- `effectiveCost` = `average_cost_usd` (API rows) or `average_cost_usd × subsidisationFactor` (tier rows). [Cost per task data](../cost-per-task-data/spec.md) divides the effective cost, so tier rows recompute it.
+
+## App
+
+- Access route is **not** a column — it renders inside the Model cell as a tag on tier rows (exact styling decided in ticket 08).
+- Tier-row Avg cost and Cost/perf cells show the API cost first, struck through and muted, then the effective value in normal weight (the Cost/perf struck value is API cost ÷ Pass@1; Pass@1 = 0 renders one blank cell, no struck blank). No per-cell "(e)" marker — the estimate caveat lives in the Subscriptions picker's disclaimer instead. Both columns sort by effective values. API-row Avg cost is the unadjusted average cost. (Strikeout added in ticket 12's grilling; the "(e)" removed in the same ticket's follow-up.)
+- Sub-cent costs collapse to $0.01 or $0.00, which is deliberate — tiny tier costs should read as "effectively free" rather than invite comparison of raw values.
+- Footer: "subsidised costs are rough approximations based on SemiAnalysis estimates" (ticket 08).
+
+## Acceptance criteria
+
+- The dataset derives 185 rows. Spot-checked maths: a Fable 5 tier row uses the halved equivalent spend (claude-pro factor 0.10, not 0.05).
+- Unit tests cover row expansion and subsidisation (incl. multiplier).
+
+## Tickets
+
+Not yet assigned. The tickets that built this feature are in [`subsidised-leaderboard/tickets/`](../subsidised-leaderboard/tickets/) until the ticket split; ticket numbers in this spec refer to that folder.

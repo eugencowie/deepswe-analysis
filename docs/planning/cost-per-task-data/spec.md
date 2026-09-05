@@ -1,0 +1,20 @@
+# Spec: Cost per task data
+
+Adds cost per solved task to the [leaderboard table](../leaderboard-table/spec.md) as the Cost/perf column — the primary reason this project exists. Vocabulary: cost per solved task, effective cost in [docs/context.md](../../context.md).
+
+## Derivation rule
+
+- `costPerSolvedTask` = `effectiveCost / pass_at_1` (dollars per solved task; e.g. $4 at 75% → $5.33). Blank if `pass_at_1` is 0. `effectiveCost` is the entry's `average_cost_usd` on API rows; [subscription data](../subscription-data/spec.md) scales it on tier rows.
+
+## App
+
+- Column: Cost/perf, after Avg cost. Header annotation with a tooltip: Cost/perf is the cost per solved task ("Avg cost ÷ Pass@1: what you pay per task actually solved").
+- Number formatting: cost/perf as standard two-decimal currency, like avg cost.
+
+## Acceptance criteria
+
+- Unit tests cover cost per solved task, including the Pass@1 = 0 blank.
+
+## Tickets
+
+Not yet assigned. The tickets that built this feature are in [`subsidised-leaderboard/tickets/`](../subsidised-leaderboard/tickets/) until the ticket split; ticket numbers in this spec refer to that folder.
