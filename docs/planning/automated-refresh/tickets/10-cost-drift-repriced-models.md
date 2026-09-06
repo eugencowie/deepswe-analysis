@@ -1,7 +1,7 @@
 # 10: Average cost differs from the DeepSWE site for repriced models
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: none
 
 ## Problem
@@ -96,3 +96,11 @@ The bundle's full table, resolved for v1.1 (USD per million tokens, input / cach
 Computed per-row factors against the artifact matching `raw_sha256` above: gpt-5-6-sol max 0.7698, xhigh 0.7651, high 0.7671, medium 0.7603, low 0.7605; deepseek-v4-flash max 4.6298. The three models already in `data/cost-adjustments.json` reproduce the site exactly because their revisions are uniform. The site's index page references two `index-*.js` bundles today; only one contains the table.
 
 Why the old design could not have caught this: the spec relied on `source_generated_at` changing to prompt a changelog check, but the refresh deliberately skips writing when only that field changes, and the table grew from three to seven models inside v1.1 with no other signal.
+
+### 2026-09-06: Implemented
+
+`scripts/deepswe-price-revisions.ts` (factor formula, bundle extraction keyed on the table's shape, version resolution) with tests against a checked-in excerpt of `index-C8-z8dCr.js` and the worked examples above. `normalize` takes resolved revisions and computes the factor per entry; the artifact schema requires the token means; snapshot `schema_version` is 2 with `price_revisions` and per-entry `input_tokens`/`cached_tokens`. The shell fetches the index page and every `index-*.js` it references, extracts the table, rewrites `data/price-revisions.json` on change, and the PR body lists changed models with old and new rates and the entries whose cost moved. `.github/workflows/refresh.yml` commits the new file.
+
+Verified: the live refresh reproduces all eight entries above to display precision; a second run is a no-op; deleting glm-5-3-flash from the file alone and rerunning restores it byte-identical, leaves the snapshot untouched, and the PR body names it. Extraction failure is covered by the unit tests (zero, empty, or multiple matches throw) and by the shell's ordering: extraction runs before any write.
+
+Code review caught and fixed before commit: the PR-body section first diffed against the previous snapshot rather than the file, so the file-only deletion case produced an empty table; `{}` matched as a version-keyed table; the "entries moved" list now keys on a changed factor rather than a changed cost, so raw artifact drift in the same run is not reported as a repricing; a token mix that costs nothing at the old rates is a hard error rather than the site's silent no-adjustment. The failure branch of the workflow body still names only the half, not the specific error; the run log carries that.

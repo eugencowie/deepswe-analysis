@@ -11,6 +11,6 @@ The DeepSWE site retroactively reprices some models' costs, but publishes the ru
 
 ## Consequences
 
-- The refresh depends on a minified third-party bundle keeping a recognisable rate-table shape. The extractor keys on that shape, not on minified names, and a redeploy that breaks it turns the weekly run red until a human fixes the extractor or confirms the site dropped the table.
+- The refresh depends on a minified third-party bundle keeping a recognisable price-table shape. The extractor keys on that shape, not on minified names, and a redeploy that breaks it turns the weekly run red until a human fixes the extractor or confirms the site dropped the table.
 - The snapshot carries each entry's token means and factor, so any adjusted cost in a Refresh PR diff can be recomputed by hand from the same PR.
 - The version-bump workflow no longer includes a hand re-check of the bundle.

@@ -6,11 +6,15 @@
 import { z } from "zod";
 import type { DeepsweSnapshot, ModelMappingEntry } from "./types.ts";
 
+const priceRateSchema = z.object({ input: z.number(), cached: z.number(), output: z.number() });
+
 const deepsweEntrySchema = z.object({
   model: z.string(),
   effort: z.string().nullable(),
   pass_at_1: z.number(),
   average_cost_usd: z.number(),
+  input_tokens: z.number(),
+  cached_tokens: z.number(),
   output_tokens: z.number(),
   steps: z.number(),
   n_scored_attempts: z.number(),
@@ -22,7 +26,7 @@ const deepsweEntrySchema = z.object({
 export const deepsweSnapshotSchema = z.object({
   source: z.string(),
   sourceUrl: z.string(),
-  schema_version: z.literal(1),
+  schema_version: z.literal(2),
   benchmark_version: z.literal("v1.1"),
   source_url: z.string(),
   source_generated_at: z.string(),
@@ -31,7 +35,7 @@ export const deepsweSnapshotSchema = z.object({
   source_scope: z.string(),
   source_unit: z.string(),
   raw_sha256: z.string(),
-  cost_adjustments: z.array(z.object({ model: z.string(), factor: z.number() })),
+  price_revisions: z.record(z.string(), z.object({ from: priceRateSchema, to: priceRateSchema })),
   entries: z.array(deepsweEntrySchema).superRefine((entries, ctx) => {
     const seen = new Set<string>();
     for (const entry of entries) {
