@@ -73,7 +73,16 @@ export function LeaderboardToolbar({
       </ButtonGroup>
       <div className="ms-auto flex items-center gap-2">
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+          {/* Brand-tinted: subscription pricing is the feature the site adds. */}
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-brand/40 bg-brand/8 text-brand hover:bg-brand/15 hover:text-brand aria-expanded:bg-brand/15 aria-expanded:text-brand dark:bg-brand/12 dark:hover:bg-brand/20 dark:aria-expanded:bg-brand/20"
+              />
+            }
+          >
             Subscriptions{tierPicks.length > 0 && `: ${tierPicks.join(" · ")}`}
             <ChevronDown data-icon="inline-end" />
           </DropdownMenuTrigger>
