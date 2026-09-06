@@ -61,7 +61,7 @@ export function retryAfterMs(headerValue: string | null, now: () => number = Dat
 // moonshotai/int4 — live data shows Moonshot and Z.ai never expose a bare
 // slug). Product variants (moonshotai/highspeed), regions (azure/us), and
 // speed tiers (openai/fast) never equal their quantization, so they can't
-// match. Ticket 11 deviation from "exact match only", forced by that live
+// match. The automated-refresh ticket 02 deviation from "exact match only", forced by that live
 // data; ambiguity stays a hard error. Case-insensitive on both sides: slug
 // casing carries no meaning, and an upstream case shuffle shouldn't flip the
 // match.
@@ -198,7 +198,7 @@ export function buildSnapshot(
 // invariants, so the reviewer's count acknowledgement, and any omission or
 // disappearance warning whose previous value lives only in the review, must
 // reach the PR. The heading names the source because the body also carries
-// the DeepSWE summary (ticket 21).
+// the DeepSWE summary (automated-refresh ticket 09).
 export function summarizeRefresh(
   existing: ThroughputSnapshot | null,
   snapshot: ThroughputSnapshot,

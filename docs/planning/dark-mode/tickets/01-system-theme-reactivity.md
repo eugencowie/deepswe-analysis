@@ -31,4 +31,4 @@ Update `src/components/ui/README.md`: `theme-provider` and `mode-toggle` have di
 
 **2026-08-23** — User verified the FOUC fix manually on macOS; resolved. Follow-up tweak in the same session: the toggle's trigger icon now reflects the *preference*, not the resolved appearance — Sun for light, Moon for dark, Monitor for system (previously the vendored Sun/Moon pair swapped via the `dark:` CSS variant, so `system` displayed as whichever theme the OS resolved to).
 
-**2026-08-23** — Second follow-up: the dropdown is gone; the button now cycles system → light → dark → system directly, icon showing the current preference. This leaves `dropdown-menu.tsx` with no consumers — kept, since it's a catalog component and ticket 09 (subsidised-leaderboard) plans to use it for the filter dropdown.
+**2026-08-23** — Second follow-up: the dropdown is gone; the button now cycles system → light → dark → system directly, icon showing the current preference. This leaves `dropdown-menu.tsx` with no consumers — kept, since it's a catalog component and effort-filter ticket 01 plans to use it for the filter dropdown.

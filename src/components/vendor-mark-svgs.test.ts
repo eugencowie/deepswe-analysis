@@ -4,7 +4,7 @@ import { modelMapping } from "@/data/sources";
 import { vendorMarkSvgs } from "./vendor-mark-svgs";
 
 // A new vendor in the model mapping must force a vendor-mark decision rather
-// than silently rendering without one (ticket 16).
+// than silently rendering without one (model-data ticket 01).
 test("every vendor in the model mapping has a vendor mark", () => {
   const vendors = new Set(modelMapping.map((entry) => entry.vendor));
   for (const vendor of vendors) {

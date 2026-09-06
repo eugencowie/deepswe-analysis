@@ -163,7 +163,7 @@ describe("normalize", () => {
   });
 
   // DeepSWE shows rows while the latest job is still running (finished_at
-  // null), so the snapshot accepts them too (ticket 17).
+  // null), so the snapshot accepts them too (automated-refresh ticket 05).
   it("accepts a null latest_job finish time", () => {
     const source = {
       ...artifact([row("claude-opus-5")]),

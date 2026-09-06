@@ -2,7 +2,7 @@
 // describe the checked-in files completely, not just what the UI reads.
 
 // Every data file carries this provenance pair: the human-facing citation
-// whose URL the footer links (ticket 15). Distinct from the DeepSWE
+// whose URL the footer links (automated-refresh ticket 04). Distinct from the DeepSWE
 // snapshot's `source_url`, which is the fetched artifact itself.
 export type Provenance = {
   source: string;
@@ -51,11 +51,11 @@ export type ModelMappingEntry = {
   displayName: string;
   vendor: string;
   // Revision-pinned wherever OpenRouter has a pinned listing (ADR 0002);
-  // null yields blank throughput/time (ticket 07).
+  // null yields blank throughput/time (avg-time-data ticket 01).
   openrouterId: string | null;
   family: SubscriptionFamily;
   usageMultiplier: number;
-  shortName?: string; // UI short label, falling back to displayName (ticket 12)
+  shortName?: string; // UI short label, falling back to displayName (subscription-filter ticket 01)
 };
 
 export type VendorMappingEntry = {
