@@ -63,3 +63,7 @@ and dark with Playwright screenshots.
 
 **2026-09-06**. Rank column removed at the user's request after seeing it
 in the real page. The prototype branch still has it.
+
+**2026-09-06**. Follow-ups in the same session: the Subscriptions trigger
+and the three derived columns carry a faint brand tint, marking what the
+site adds over DeepSWE.

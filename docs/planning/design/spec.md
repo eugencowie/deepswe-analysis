@@ -29,7 +29,9 @@ record specific visual changes.
 - Keep related controls together and the table dense enough for comparison.
   On narrow screens, let controls wrap and the table scroll horizontally.
 - Let the table carry one visual encoding: Pass@1 drawn as a purple bar
-  behind the figure on a fixed 0 to 100% scale. Other
+  behind the figure on a fixed 0 to 100% scale. The three derived columns
+  and the Subscriptions trigger carry a faint purple tint, marking what the
+  site adds over DeepSWE. Other
   columns stay plain figures. The sorted column header is the only header
   in the foreground colour.
 - Support light and dark appearances throughout. Neutral colours and the

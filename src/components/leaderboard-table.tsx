@@ -46,7 +46,8 @@ type ColumnSpec = {
   align: "left" | "right";
   firstDirection: SortDirection;
   // Derived columns are computed by this project rather than reported by the
-  // DeepSWE leaderboard; a border separates them from the source columns.
+  // DeepSWE leaderboard; a brand-tinted background and a rule set them
+  // apart from the source columns, matching the Subscriptions trigger.
   derived?: boolean;
   // A 0..1 fraction drawn as a bar behind the cell, so the column's ranking
   // reads at a glance. Pass@1 only: it is the one column on a fixed scale.
@@ -267,7 +268,8 @@ export function LeaderboardTable({
                   className={cn(
                     spec.align === "right" && "text-right",
                     spec.bar && "w-40",
-                    derivedBoundary(index) && "border-l",
+                    spec.derived && "bg-brand/5 dark:bg-brand/8",
+                    derivedBoundary(index) && "border-l border-brand/30",
                   )}
                 >
                   <button
@@ -321,7 +323,8 @@ export function LeaderboardTable({
                   className={cn(
                     "py-1.5",
                     spec.align === "right" && "text-right tabular-nums",
-                    derivedBoundary(index) && "border-l",
+                    spec.derived && "bg-brand/5 dark:bg-brand/8",
+                    derivedBoundary(index) && "border-l border-brand/30",
                   )}
                 >
                   {bar === undefined ? (
