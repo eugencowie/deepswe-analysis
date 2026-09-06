@@ -10,7 +10,9 @@ export function VendorMark({ vendor, className }: { vendor: string; className?: 
       aria-label={vendor}
       className={cn("inline-block align-text-bottom [&>svg]:size-4", className)}
       // Static build-time SVG strings from the icon package, never user input.
-      dangerouslySetInnerHTML={{ __html: svg }}
+      // The wrapper carries the accessible name; the SVG's own <title> would
+      // otherwise expose a second, sometimes differently named, nested image.
+      dangerouslySetInnerHTML={{ __html: svg.replace("<svg", '<svg aria-hidden="true"') }}
     />
   );
 }

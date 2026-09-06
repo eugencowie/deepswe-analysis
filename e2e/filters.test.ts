@@ -93,7 +93,13 @@ test("the models picker removes a model everywhere and can clear to empty", asyn
   await page.goto("./");
   await page.getByRole("button", { name: /^Models/ }).click();
 
-  await page.getByRole("menuitemcheckbox", { name: "Claude Fable 5" }).click();
+  // Each item leads with its vendor mark, whose aria-label joins the name.
+  const fable = page.getByRole("menuitemcheckbox", {
+    name: "Anthropic Claude Fable 5",
+    exact: true,
+  });
+  await expect(fable.getByRole("img", { name: "Anthropic" })).toBeVisible();
+  await fable.click();
   await expect(bodyRows(page)).toHaveCount(modelCount - 1);
 
   await page.getByRole("menuitem", { name: "Clear" }).click();
