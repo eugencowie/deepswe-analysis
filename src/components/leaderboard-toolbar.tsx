@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { cn } from "@/components/ui/utils";
+import { VendorMark } from "@/components/vendor-mark";
 import { formatTierDiscount } from "@/data/format";
 import {
   setEffortView,
@@ -126,13 +127,14 @@ export function LeaderboardToolbar({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-60">
             <div className="max-h-72 overflow-y-auto">
-              {models.map(({ model, displayName }) => (
+              {models.map(({ model, displayName, vendor }) => (
                 <DropdownMenuCheckboxItem
                   key={model}
                   checked={filters.models.has(model)}
                   closeOnClick={false}
                   onCheckedChange={() => onChange(toggleModel(filters, model))}
                 >
+                  <VendorMark vendor={vendor} />
                   {displayName}
                 </DropdownMenuCheckboxItem>
               ))}

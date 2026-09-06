@@ -86,3 +86,7 @@ monochrome SVGs) rather than by screenshot; no preview host was available.
 its glyph is white, drawn for colored backgrounds. Moonshot now uses the
 monochrome `kimi.svg` (`currentColor`), deviating from the research doc's
 asset table; correction noted there.
+
+**2026-09-06** — The "Model cell only — not the Models picker" rule above is
+superseded: the Models picker now shows the mark too, per
+[model-filter ticket 01](../../model-filter/tickets/01-vendor-marks-in-picker.md).

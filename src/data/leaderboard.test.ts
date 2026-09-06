@@ -308,6 +308,13 @@ describe("modelOptions", () => {
       "Claude Opus 5",
     );
   });
+
+  test("carries the mapping's vendor for the Models picker's vendor mark", () => {
+    const { modelOptions } = live();
+    expect(modelOptions.find((option) => option.model === "claude-opus-5")?.vendor).toBe(
+      "Anthropic",
+    );
+  });
 });
 
 describe("pickerFamilies", () => {

@@ -35,7 +35,7 @@ export type LeaderboardRow = {
   averageTimeSeconds: number | null; // null when throughput is null
 };
 
-export type ModelOption = { model: string; displayName: string };
+export type ModelOption = { model: string; displayName: string; vendor: string };
 
 // A family model with a non-standard usage limit, badged per tier in the
 // Subscriptions picker because its discount differs from the tier-wide one.
@@ -99,8 +99,8 @@ export function createLeaderboard({
   tiers,
 }: LeaderboardSources): Leaderboard {
   const rows = deriveRows(snapshot, mapping, throughput, tiers);
-  const modelOptions = [...new Map(rows.map((row) => [row.model, row.displayName]))]
-    .map(([model, displayName]) => ({ model, displayName }))
+  const modelOptions = [...new Map(rows.map((row) => [row.model, row]))]
+    .map(([model, { displayName, vendor }]) => ({ model, displayName, vendor }))
     .toSorted((a, b) => a.displayName.localeCompare(b.displayName, "en"));
   const routeOrder: AccessRoute[] = ["api", ...tiers.map((tier) => tier.id)];
   const pickerFamilies = FAMILIES.map((family) => ({
