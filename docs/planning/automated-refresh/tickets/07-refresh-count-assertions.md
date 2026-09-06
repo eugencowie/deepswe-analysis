@@ -1,4 +1,4 @@
-# 19: Keep refresh snapshot counts in sync
+# 07: Keep refresh snapshot counts in sync
 
 Type: task
 Status: resolved

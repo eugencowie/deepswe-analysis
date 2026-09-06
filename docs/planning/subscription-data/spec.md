@@ -35,10 +35,10 @@ Per row:
 
 ## App
 
-- Access route is **not** a column — it renders inside the Model cell as a tag on tier rows (exact styling decided in ticket 08).
-- Tier-row Avg cost and Cost/perf cells show the API cost first, struck through and muted, then the effective value in normal weight (the Cost/perf struck value is API cost ÷ Pass@1; Pass@1 = 0 renders one blank cell, no struck blank). No per-cell "(e)" marker — the estimate caveat lives in the Subscriptions picker's disclaimer instead. Both columns sort by effective values. API-row Avg cost is the unadjusted average cost. (Strikeout added in ticket 12's grilling; the "(e)" removed in the same ticket's follow-up.)
+- Access route is **not** a column — it renders inside the Model cell as a tag on tier rows (exact styling decided in ticket 01).
+- Tier-row Avg cost and Cost/perf cells show the API cost first, struck through and muted, then the effective value in normal weight (the Cost/perf struck value is API cost ÷ Pass@1; Pass@1 = 0 renders one blank cell, no struck blank). No per-cell "(e)" marker — the estimate caveat lives in the Subscriptions picker's disclaimer instead. Both columns sort by effective values. API-row Avg cost is the unadjusted average cost. (Strikeout added in subscription-filter ticket 01's grilling; the "(e)" removed in the same ticket's follow-up.)
 - Sub-cent costs collapse to $0.01 or $0.00, which is deliberate — tiny tier costs should read as "effectively free" rather than invite comparison of raw values.
-- Footer: "subsidised costs are rough approximations based on SemiAnalysis estimates" (ticket 08).
+- Footer: "subsidised costs are rough approximations based on SemiAnalysis estimates" (ticket 01).
 
 ## Acceptance criteria
 
@@ -47,4 +47,6 @@ Per row:
 
 ## Tickets
 
-Not yet assigned. The tickets that built this feature are in [`subsidised-leaderboard/tickets/`](../subsidised-leaderboard/tickets/) until the ticket split; ticket numbers in this spec refer to that folder.
+- [01: Tier rows and subsidisation](tickets/01-tier-rows-subsidisation.md)
+
+The struck-out API cost was built in [subscription-filter ticket 01](../subscription-filter/tickets/01-strikeout-api-cost-exclusive-picker.md).

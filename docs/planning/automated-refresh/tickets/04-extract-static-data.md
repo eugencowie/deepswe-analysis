@@ -1,4 +1,4 @@
-# 15: Extract static data to data/
+# 04: Extract static data to data/
 
 Type: task
 Status: resolved
@@ -13,7 +13,7 @@ Extract `costAdjustmentFactors` from `scripts/deepswe-snapshot.ts` into `data/co
 
 De-triplicate the tests: `scripts/deepswe-snapshot.test.ts` re-asserts all three pairs and `src/data/derive.test.ts` hardcodes `* 0.2`; after extraction the factor values should live in one place the tests read (or fixtures clearly marked as fixtures), not as re-transcribed literals.
 
-This reverses ticket 10's "inline constant" decision, which predates the data-lives-in-data principle. When this ticket lands, append a note to ticket 10's decision log recording the reversal and pointing here.
+This reverses ticket 01's "inline constant" decision, which predates the data-lives-in-data principle. When this ticket lands, append a note to ticket 01's decision log recording the reversal and pointing here.
 
 ### Provenance URLs → the data files they describe
 
@@ -37,7 +37,7 @@ The DeepSWE origin URL used by the refresh script to fetch stays a script consta
 - [x] `data/cost-adjustments.json` exists with provenance fields; the refresh shell loads it (zod-validated) and passes factors into the pure `normalize`
 - [x] Factor values asserted in exactly one place across the test suite
 - [x] All three data files carry `source` + `sourceUrl`; the footer renders provenance from data imports, no citation URLs in JSX
-- [x] Ticket 10's decision log notes the reversal
+- [x] Ticket 01's decision log notes the reversal
 - [x] `vp run ready` passes
 
 ## Comments
@@ -45,6 +45,6 @@ The DeepSWE origin URL used by the refresh script to fetch stays a script consta
 **2026-08-26** — Implemented. Two departures from the letter of the ticket, caught in review and worth recording:
 
 - The first acceptance criterion originally read "written snapshot output unchanged", which conflicted with "What to build" (the refresh script now writes `source`/`sourceUrl` into the snapshot). Resolved in favour of the body: factor application is byte-identical, the snapshot shape gained the two provenance fields, and the criterion text was updated to match.
-- `openrouter-throughput.json`'s provenance pair is hand-seeded here; the throughput refresh script that will write it does not exist yet (ticket 11).
+- `openrouter-throughput.json`'s provenance pair is hand-seeded here; the throughput refresh script that will write it does not exist yet (ticket 02).
 
 The de-triplication landed as: factor values live only in `data/cost-adjustments.json`; `scripts/deepswe-snapshot.test.ts` guards drift by comparing the snapshot's recorded `cost_adjustments` against that file, and the normalize mechanism tests use a clearly-marked fixture table.

@@ -6,7 +6,7 @@ Blocked by: 02, 03
 
 ## Question
 
-Assemble everything decided and discovered into `docs/planning/subsidised-leaderboard/spec.md` — the destination of this map: a spec a build session can execute without further decisions.
+Assemble everything decided and discovered into `docs/planning/product-spec/spec.md` — the destination of this map: a spec a build session can execute without further decisions.
 
 The spec must cover:
 

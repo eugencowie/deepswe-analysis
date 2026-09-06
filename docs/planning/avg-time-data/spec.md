@@ -1,6 +1,6 @@
 # Spec: Average time data
 
-Adds throughput-derived average time to the [leaderboard table](../leaderboard-table/spec.md): the OpenRouter throughput snapshot, the model mapping's OpenRouter id, the derivation, and the Tok/s and Avg time columns. Vocabulary: throughput, consumer endpoint, average time in [docs/context.md](../../context.md). Source facts: [OpenRouter research](../subsidised-leaderboard/research/openrouter-throughput.md).
+Adds throughput-derived average time to the [leaderboard table](../leaderboard-table/spec.md): the OpenRouter throughput snapshot, the model mapping's OpenRouter id, the derivation, and the Tok/s and Avg time columns. Vocabulary: throughput, consumer endpoint, average time in [docs/context.md](../../context.md). Source facts: [OpenRouter research](../product-spec/research/openrouter-throughput.md).
 
 ## Data file: `data/openrouter-throughput.json`
 
@@ -15,7 +15,7 @@ type ThroughputSnapshot = {
 };
 ```
 
-Semantics revised 2026-08-25 ([ADR 0002](../../architecture/0002-throughput-consumer-endpoint.md)): the original seed stored `medianP50`, the median across all default-tier endpoints; the field is now the vendor's consumer-endpoint p50, and models whose vendor runs no consumer endpoint are omitted (blank in the UI). Revised again in ticket 11's grilling (2026-08-27): the once-planned per-model endpoint detail (`endpoints: { tag, provider, p50 }[]`) is dropped — selection is a guarded slug match against `data/vendor-mapping.json`, so the refresh run's warnings and errors carry the audit trail and the checked-in file keeps only what the app reads.
+Semantics revised 2026-08-25 ([ADR 0002](../../architecture/0002-throughput-consumer-endpoint.md)): the original seed stored `medianP50`, the median across all default-tier endpoints; the field is now the vendor's consumer-endpoint p50, and models whose vendor runs no consumer endpoint are omitted (blank in the UI). Revised again in automated-refresh ticket 02's grilling (2026-08-27): the once-planned per-model endpoint detail (`endpoints: { tag, provider, p50 }[]`) is dropped — selection is a guarded slug match against `data/vendor-mapping.json`, so the refresh run's warnings and errors carry the audit trail and the checked-in file keeps only what the app reads.
 
 ## Model mapping field
 
@@ -32,7 +32,7 @@ Semantics revised 2026-08-25 ([ADR 0002](../../architecture/0002-throughput-cons
 
 - Columns: Avg time (est), Tok/s (est), after the table's source columns. "(est)" marks them estimates, each with a tooltip (Avg time tooltip: "Output tokens ÷ vendor API throughput; excludes tool execution and gaps between the agent's calls"; Tok/s tooltip: "p50 throughput of the vendor's own consumer API (via OpenRouter stats). Not the speed measured in the benchmark run" — the key message is that the figure describes the vendor's consumer API measured by OpenRouter, not the benchmark run's own speed; ADR 0002).
 - Number formatting: throughput always one decimal (40.0, not 40); avg time as `Xm Ys` with seconds rounded to nearest, minutes riding past 60 ("64m 10s", no hours unit), and a zero minute below sixty seconds ("0m 45s").
-- Footer: OpenRouter capture date (ticket 07).
+- Footer: OpenRouter capture date (ticket 01).
 
 ## Acceptance criteria
 
@@ -40,4 +40,5 @@ Semantics revised 2026-08-25 ([ADR 0002](../../architecture/0002-throughput-cons
 
 ## Tickets
 
-Not yet assigned. The tickets that built this feature are in [`subsidised-leaderboard/tickets/`](../subsidised-leaderboard/tickets/) until the ticket split; ticket numbers in this spec refer to that folder.
+- [01: Average time via OpenRouter throughput](tickets/01-average-time-throughput.md)
+- [02: Consumer-endpoint throughput and pinned DeepSeek revisions](tickets/02-consumer-endpoint-throughput.md)

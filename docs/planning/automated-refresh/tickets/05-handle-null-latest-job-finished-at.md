@@ -1,4 +1,4 @@
-# 17: Handle null DeepSWE job finish time
+# 05: Handle null DeepSWE job finish time
 
 Type: task
 Status: resolved
@@ -53,7 +53,7 @@ The failure reproduced on three consecutive runs. The live artifact still contai
 
 The app derives rows from `snapshot.entries`. Its displayed snapshot date comes from `source_generated_at`, not `source_latest_job.finished_at`.
 
-The hard failure was deliberate. Ticket 10 records a null latest job as a guard-rail failure because the checked-in snapshot type requires a completed job reference. A null finish time may mean the upstream job is incomplete, but the upstream contract has not been confirmed.
+The hard failure was deliberate. Ticket 01 records a null latest job as a guard-rail failure because the checked-in snapshot type requires a completed job reference. A null finish time may mean the upstream job is incomplete, but the upstream contract has not been confirmed.
 
 Accepting null does not make the current refresh pass. Bypassing the schema check reaches the next guard rail:
 
@@ -92,8 +92,8 @@ Option 2: a null `finished_at` is valid provenance. DeepSWE displays the entry o
 
 - Schema widens only for the observed state: `finished_at` becomes nullable, the `latest_job` object stays required (an absent job has never been observed and stays a loud failure).
 - `source_latest_job` stays in the snapshot as provenance but is excluded from `hasMeaningfulChange`: the app never reads it, so a job-only change no longer triggers a snapshot PR.
-- The `glm-5-3-flash` mapping is out of scope — [ticket 18](18-new-model-mapping-workflow.md) decides how new models are handled going forward, including whether the refresh can auto-populate mapping entries. Until then the refresh fails on the existing actionable mapping error, and the scheduled run's failure email is the designed alert.
+- The `glm-5-3-flash` mapping is out of scope — [ticket 06](06-new-model-mapping-workflow.md) decides how new models are handled going forward, including whether the refresh can auto-populate mapping entries. Until then the refresh fails on the existing actionable mapping error, and the scheduled run's failure email is the designed alert.
 
 ## Comments
 
-**2026-08-27** — Implemented: `finished_at` nullable in `leaderboardArtifactSchema` and `DeepsweSnapshot`; `source_latest_job` excluded from `hasMeaningfulChange`; tests cover null acceptance, absent-job rejection, and job-only non-meaningful change. Spec, ticket 10, and the research capture updated to match. Against the live artifact the refresh now reaches the intended outcome: the actionable `glm-5-3-flash` mapping error.
+**2026-08-27** — Implemented: `finished_at` nullable in `leaderboardArtifactSchema` and `DeepsweSnapshot`; `source_latest_job` excluded from `hasMeaningfulChange`; tests cover null acceptance, absent-job rejection, and job-only non-meaningful change. Spec, ticket 01, and the research capture updated to match. Against the live artifact the refresh now reaches the intended outcome: the actionable `glm-5-3-flash` mapping error.

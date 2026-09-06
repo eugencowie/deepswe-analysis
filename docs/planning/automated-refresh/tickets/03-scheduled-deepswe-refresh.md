@@ -1,8 +1,8 @@
-# 13: Scheduled DeepSWE refresh
+# 03: Scheduled DeepSWE refresh
 
 Type: task
 Status: resolved
-Blocked by: 10
+Blocked by: 01
 
 ## What to build
 
@@ -10,7 +10,7 @@ A scheduled GitHub Actions workflow that runs the DeepSWE refresh script and ope
 
 ## Decisions (grilled 2026-08-25)
 
-- Scope: DeepSWE only. The OpenRouter refresh (ticket 11) stays manual — scheduling it would put `OPENROUTER_API_KEY` in repo secrets, which the spec rules out. The workflow needs no secrets beyond the PR token.
+- Scope: DeepSWE only. The OpenRouter refresh (ticket 02) stays manual — scheduling it would put `OPENROUTER_API_KEY` in repo secrets, which the spec rules out. The workflow needs no secrets beyond the PR token.
 - Token: a fine-grained PAT (contents + pull-requests write, this repo only) stored as the `REFRESH_PR_TOKEN` repo secret, because PRs created with the default `GITHUB_TOKEN` don't trigger the `ready`/`e2e` checks. Provisioned via a one-off wizard script (run once, not committed); the token was created without an expiry, so no renewal chore.
 - Cadence: weekly cron plus `workflow_dispatch`, in a separate `.github/workflows/refresh.yml` (its triggers and permissions differ from `ci.yml`).
 - Skip logic lives in `scripts/refresh-deepswe.ts`, not the workflow: the script compares the fresh snapshot against the checked-in file and leaves it untouched when the only differences are `raw_sha256` and/or `source_generated_at` — both ride along with the next real change. Rationale: upstream regenerates the "live" artifact (observed: a new `mean_cache_tokens` field with identical consumed fields), and the footer date should only advance when the data actually changed. Manual runs get the same behavior for free.
@@ -35,6 +35,6 @@ The PAT was provisioned with a one-off wizard script (run once and discarded, no
 
 **2026-08-25** — Ticket closed complete at the user's direction; the post-merge test drive happens outside this ticket, with any failure tracked as a new ticket.
 
-**2026-08-27** — The post-merge test drive failed because the live artifact returned a null `latest_job.finished_at`; findings and the follow-up decision are recorded in [ticket 17](17-handle-null-latest-job-finished-at.md).
+**2026-08-27** — The post-merge test drive failed because the live artifact returned a null `latest_job.finished_at`; findings and the follow-up decision are recorded in [ticket 05](05-handle-null-latest-job-finished-at.md).
 
-**2026-08-27** — The "OpenRouter refresh stays manual" scope decision was reversed in ticket 11's grilling: [ticket 20](20-scheduled-openrouter-refresh.md) schedules it in this workflow with `OPENROUTER_API_KEY` as a repo secret.
+**2026-08-27** — The "OpenRouter refresh stays manual" scope decision was reversed in ticket 02's grilling: [ticket 08](08-scheduled-openrouter-refresh.md) schedules it in this workflow with `OPENROUTER_API_KEY` as a repo secret.

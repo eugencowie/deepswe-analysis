@@ -35,8 +35,8 @@ React + TypeScript + TanStack Table on the Vite+ toolchain, with shadcn/ui compo
 
 ## Repo
 
-~~Scaffold and repo creation~~ — done in ticket [05](../subsidised-leaderboard/tickets/05-scaffold-and-deploy-foundation.md): scaffold, public repo, and Pages deploy are live (<https://eugencowie.github.io/deepswe-enhanced/>).
+~~Scaffold and repo creation~~ — done in ticket [01](tickets/01-scaffold-and-deploy-foundation.md): scaffold, public repo, and Pages deploy are live (<https://eugencowie.github.io/deepswe-enhanced/>).
 
 ## Tickets
 
-Not yet assigned. The tickets that built this feature are in [`subsidised-leaderboard/tickets/`](../subsidised-leaderboard/tickets/) until the ticket split; ticket numbers in this spec refer to that folder.
+- [01: Scaffold the Vite+ workspace and deploy the template site](tickets/01-scaffold-and-deploy-foundation.md)

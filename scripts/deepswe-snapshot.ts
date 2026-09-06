@@ -10,7 +10,7 @@ export const benchmarkVersion = "v1.1";
 // The site's retroactive repricing multipliers (docs/context.md: cost
 // adjustment factor) live in data/cost-adjustments.json; no first-party JSON
 // exposes them, so a human re-checks the deployed bundle and edits that file
-// during the version-bump workflow (ticket 15 reversed ticket 10's inline
+// during the version-bump workflow (automated-refresh ticket 04 reversed automated-refresh ticket 01's inline
 // constant). The shell loads it with this schema and passes factors in.
 export const costAdjustmentsSchema = z.object({
   source: z.string().min(1),
@@ -38,7 +38,7 @@ export const leaderboardArtifactSchema = z.object({
   generated_at: z.iso.datetime({ offset: true }),
   n_tasks_in_set: z.number().int().positive(),
   // finished_at is null while the upstream job is still running; DeepSWE shows
-  // those rows anyway, so we snapshot them too (ticket 17). An absent job
+  // those rows anyway, so we snapshot them too (automated-refresh ticket 05). An absent job
   // object stays a hard error: that state has never been observed.
   latest_job: z.object({ name: z.string(), finished_at: z.string().nullable() }),
   rows: z.array(
@@ -183,7 +183,7 @@ export function normalize(
 // The Refresh PR body's before/after summary (ADR 0004): count drift is
 // acknowledged in review, not by test literals, so the reviewer must see it.
 // The heading names the source because the body also carries the OpenRouter
-// summary (ticket 21).
+// summary (automated-refresh ticket 09).
 export function summarizeRefresh(input: {
   existing: DeepsweSnapshot | null;
   snapshot: DeepsweSnapshot;

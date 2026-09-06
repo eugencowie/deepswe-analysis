@@ -1,4 +1,4 @@
-# 05: Scaffold the Vite+ workspace and deploy the template site
+# 01: Scaffold the Vite+ workspace and deploy the template site
 
 Type: task
 Status: resolved
@@ -25,7 +25,7 @@ Deployed: the template site is live at <https://eugencowie.github.io/deepswe-enh
 
 Four deviations from the spec, reviewed and accepted (spec amended; rationale in [ADR 0001](../../../architecture/0001-toolchain-conventions.md)):
 
-- The base path is derived at deploy time by `actions/configure-pages` instead of hardcoding `base: "/deepswe-enhanced/"`. Local builds use `/`; a Playwright smoke at a sentinel base (ticket 06) covers the gap.
+- The base path is derived at deploy time by `actions/configure-pages` instead of hardcoding `base: "/deepswe-enhanced/"`. Local builds use `/`; a Playwright smoke at a sentinel base (leaderboard-table ticket 01) covers the gap.
 - The workflow is `.github/workflows/ci.yml`, not `deploy.yml`, because it also runs the ready gate on pull requests.
 - Tailnet dev/preview scripts were added so development can happen from a remote machine. Not in the spec; kept as tooling.
-- Dependencies were upgraded past the template's pins (Vite+ 0.2.9, TypeScript 7.0.2) and an `upgrade:deps` mise task plus [research notes](../research/vite-plus-package-manager-pin.md) were added. Not in the spec; the template should use current versions of dependencies, not whatever the template happens to create.
+- Dependencies were upgraded past the template's pins (Vite+ 0.2.9, TypeScript 7.0.2) and an `upgrade:deps` mise task plus [research notes](../../product-spec/research/vite-plus-package-manager-pin.md) were added. Not in the spec; the template should use current versions of dependencies, not whatever the template happens to create.

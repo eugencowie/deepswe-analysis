@@ -38,7 +38,7 @@ Entry shape: `{ "leaderboardModel": string, "displayName": string, "vendor": str
 
 ## App
 
-- The Model cell shows the mapping `displayName` in place of the leaderboard model id. It carries a tooltip with the mapped OpenRouter id, since display names omit revisions. It also leads with the vendor mark (see [vendor mark research](../subsidised-leaderboard/research/vendor-marks.md) and [ticket 16](../subsidised-leaderboard/tickets/16-vendor-marks.md)): a small inline SVG from `@lobehub/icons-static-svg`, `aria-label`led with the vendor name, monochrome marks following the theme via `currentColor`.
+- The Model cell shows the mapping `displayName` in place of the leaderboard model id. It carries a tooltip with the mapped OpenRouter id, since display names omit revisions. It also leads with the vendor mark (see [vendor mark research](../product-spec/research/vendor-marks.md) and [ticket 01](tickets/01-vendor-marks.md)): a small inline SVG from `@lobehub/icons-static-svg`, `aria-label`led with the vendor name, monochrome marks following the theme via `currentColor`.
 
 ## Acceptance criteria
 
@@ -46,4 +46,6 @@ Entry shape: `{ "leaderboardModel": string, "displayName": string, "vendor": str
 
 ## Tickets
 
-Not yet assigned. The tickets that built this feature are in [`subsidised-leaderboard/tickets/`](../subsidised-leaderboard/tickets/) until the ticket split; ticket numbers in this spec refer to that folder.
+- [01: Vendor marks in the Model cell](tickets/01-vendor-marks.md)
+
+The mapping file and display names were built in [leaderboard-table ticket 01](../leaderboard-table/tickets/01-base-api-rows-table.md); the DeepSeek revision pins in [avg-time-data ticket 02](../avg-time-data/tickets/02-consumer-endpoint-throughput.md).

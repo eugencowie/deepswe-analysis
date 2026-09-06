@@ -13,7 +13,7 @@ Resolved live with the user while charting the map (2026-08-20). Vocabulary belo
 
 ### Destination
 
-A **spec** at `docs/planning/subsidised-leaderboard/spec.md`, complete enough for a build session to execute without further decisions. Building the app is a separate, later effort.
+A **spec** at `docs/planning/product-spec/spec.md`, complete enough for a build session to execute without further decisions. Building the app is a separate, later effort.
 
 ### Source data
 

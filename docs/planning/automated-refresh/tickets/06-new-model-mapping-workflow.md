@@ -1,4 +1,4 @@
-# 18: New-model mapping workflow
+# 06: New-model mapping workflow
 
 Type: task
 Status: resolved
@@ -6,7 +6,7 @@ Blocked by: none
 
 ## Problem
 
-When the DeepSWE leaderboard gains a model that isn't in `data/model-mapping.json`, the refresh fails by design and the scheduled run emails a failure until a human adds the mapping. That happened on 2026-08-27 with `glm-5-3-flash` ([ticket 17](17-handle-null-latest-job-finished-at.md)); the mapping was deliberately left out of that ticket's scope.
+When the DeepSWE leaderboard gains a model that isn't in `data/model-mapping.json`, the refresh fails by design and the scheduled run emails a failure until a human adds the mapping. That happened on 2026-08-27 with `glm-5-3-flash` ([ticket 05](05-handle-null-latest-job-finished-at.md)); the mapping was deliberately left out of that ticket's scope.
 
 Every Friday cron run fails with the mapping error until this ticket lands.
 

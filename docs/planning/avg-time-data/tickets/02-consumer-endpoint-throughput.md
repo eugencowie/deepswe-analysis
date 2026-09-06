@@ -1,4 +1,4 @@
-# 14: Consumer-endpoint throughput and pinned DeepSeek revisions
+# 02: Consumer-endpoint throughput and pinned DeepSeek revisions
 
 Type: task
 Status: resolved
@@ -14,8 +14,8 @@ Diagnosis that led here: the site showed DeepSeek V4 Flash at 38 tok/s while Dee
 - [x] Both DeepSeek mappings revision-pinned; display names unchanged (revision lives in the Model-cell tooltip)
 - [x] Snapshot regenerated with `consumerP50` values from the 2026-08-25 frontend-feed capture; footer date follows
 - [x] Tooltips: Tok/s "p50 throughput of the vendor's own consumer API (via OpenRouter stats). Not the speed measured in the benchmark run"; Avg time "Output tokens ÷ vendor API throughput; excludes tool execution and gaps between the agent's calls"
-- [x] A model absent from the snapshot renders blank and sorts last (existing ticket 07 semantics)
-- [x] Ticket 11 updated: consumer-endpoint selection rule plus missing-id/missing-endpoint guards
+- [x] A model absent from the snapshot renders blank and sorts last (existing ticket 01 semantics)
+- [x] automated-refresh ticket 02 updated: consumer-endpoint selection rule plus missing-id/missing-endpoint guards
 - [x] `vp check` and `vp test` pass
 
 ## Comments

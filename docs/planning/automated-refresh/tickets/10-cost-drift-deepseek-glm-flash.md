@@ -1,4 +1,4 @@
-# 23: Average cost differs from the DeepSWE site for deepseek-v4-pro and glm-5-3-flash
+# 10: Average cost differs from the DeepSWE site for deepseek-v4-pro and glm-5-3-flash
 
 Type: task
 Status: needs-triage

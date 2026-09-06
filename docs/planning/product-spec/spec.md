@@ -1,10 +1,10 @@
-# Spec: Subsidised leaderboard
+# Product spec
 
 A static web app extending the DeepSWE v1.1 leaderboard with average time (via OpenRouter throughput), subscription-subsidised effective costs (via SemiAnalysis tier figures), and cost per solved task, as separate sortable/filterable rows per access route. Vocabulary: [docs/context.md](../../context.md). Decisions: [charting grilling](tickets/01-charting-grilling.md). Source facts: [DeepSWE research](research/deepswe-leaderboard-data.md), [OpenRouter research](research/openrouter-throughput.md).
 
 The tool is a deliberately rough comparison. Every derived number follows one stated convention; none is presented as a measurement.
 
-This spec was split into one spec per feature on 2026-09-05. Ticket references in those specs still point at [tickets/](tickets/) here.
+This spec was split into one spec per feature on 2026-09-05, and the build tickets moved to their features. The charting tickets (01 to 04), the [map](map.md), and the [research](research/) stay here as the effort's record.
 
 - [Leaderboard table](../leaderboard-table/spec.md): shows the DeepSWE v1.1 benchmark results in a table.
 - [Model data](../model-data/spec.md): display names and vendor marks, and the model mapping file.

@@ -1,11 +1,11 @@
-# 22: Best view picks the best Pass@1, not the highest effort
+# 02: Best view picks the best Pass@1, not the highest effort
 
 Type: task
 Status: resolved
 
 ## What to build
 
-Change the Best view to keep each model's **best entry**: the entry with the highest Pass@1 on the raw fraction, with the higher effort level winning an exact tie. This supersedes the Best paragraph in [ticket 09](./09-filters-default-view.md), which claimed the DeepSWE site keeps the highest effort. It does not. The site's deployed bundle groups rows by model and picks with:
+Change the Best view to keep each model's **best entry**: the entry with the highest Pass@1 on the raw fraction, with the higher effort level winning an exact tie. This supersedes the Best paragraph in [ticket 01](./01-filters-default-view.md), which claimed the DeepSWE site keeps the highest effort. It does not. The site's deployed bundle groups rows by model and picks with:
 
 ```js
 [...s].sort((n, a) => a.pass_rate - n.pass_rate || V(a.reasoning_effort) - V(n.reasoning_effort))[0]
@@ -22,7 +22,7 @@ Implementation notes:
 - Rewrite the "Best keeps the highest effort" unit test and the fable expectation in `e2e/filters.test.ts` (should be `Claude Fable 5 [xhigh]`). Add a tie case to the fixture.
 - Fix the stale comment above `filterRows`.
 
-Vocabulary: Best entry in [docs/context.md](../../context.md), replacing "Best effort level".
+Vocabulary: Best entry in [docs/context.md](../../../context.md), replacing "Best effort level".
 
 ## Acceptance criteria
 

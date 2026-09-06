@@ -1,4 +1,4 @@
-# 16: Vendor marks in the Model cell
+# 01: Vendor marks in the Model cell
 
 Type: task
 Status: resolved
@@ -6,7 +6,7 @@ Status: resolved
 ## What to build
 
 Render each vendor's mark before the model name in the Model cell, per the
-2026-08-26 grilling and [vendor mark research](../research/vendor-marks.md).
+2026-08-26 grilling and [vendor mark research](../../product-spec/research/vendor-marks.md).
 Vocabulary: a **vendor mark** (see `docs/context.md`) is the brand mark shown
 beside a model — not always the vendor's corporate logo (Moonshot's mark is
 Kimi, Alibaba's is Qwen).

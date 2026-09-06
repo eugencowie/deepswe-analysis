@@ -1,8 +1,8 @@
-# 09: Filters and default view
+# 01: Filters and default view
 
 Type: task
 Status: resolved
-Blocked by: 08
+Blocked by: subscription-data/01
 
 ## What to build
 
@@ -18,12 +18,12 @@ Semantics: union within a dropdown, intersection across controls. Filter state i
 Implementation notes:
 
 - Filter the rows array in a memo *before* the existing sort memo (the table uses TanStack v9 with no features enabled; don't turn on its filter features or add accessors). Sorting then composes for free and filters never touch sort state.
-- Reuse the vendored `dropdown-menu`'s `DropdownMenuCheckboxItem`/`DropdownMenuLabel`/`DropdownMenuSeparator`; don't restyle ticket 08's access badges.
+- Reuse the vendored `dropdown-menu`'s `DropdownMenuCheckboxItem`/`DropdownMenuLabel`/`DropdownMenuSeparator`; don't restyle subscription-data ticket 01's access badges.
 - Update the e2e smoke: its `tbody tr` expectation changes from all 185 derived rows to the default view (best-effort API rows). Keep it derived from the data, not a literal count.
 
-The footer already exists — its lines shipped with tickets 06–08.
+The footer already exists — its lines shipped with leaderboard-table ticket 01, avg-time-data ticket 01 and subscription-data ticket 01.
 
-Per the [spec](../spec.md) (App section). Vocabulary: Best effort level and Subscriptions picker in [docs/context.md](../../context.md).
+Per the [spec](../spec.md) (App section). Vocabulary: Best effort level and Subscriptions picker in [docs/context.md](../../../context.md).
 
 ## Acceptance criteria
 
@@ -35,7 +35,7 @@ Per the [spec](../spec.md) (App section). Vocabulary: Best effort level and Subs
 
 ## Comments
 
-2026-09-05: the Best rule described here is wrong. The DeepSWE site picks the highest Pass@1 per model, tiebreak higher effort. Superseded by [ticket 22](./22-best-view-picks-best-pass-at-1.md).
+2026-09-05: the Best rule described here is wrong. The DeepSWE site picks the highest Pass@1 per model, tiebreak higher effort. Superseded by [ticket 02](./02-best-view-picks-best-pass-at-1.md).
 
 Implemented 2026-08-24. Filtering is a pure `filterRows` in `src/data/filter.ts` applied in
 `App.tsx` before the table's sort memo; `LeaderboardRow` gained a `family` field so the

@@ -13,4 +13,4 @@ Sorts the [leaderboard table](../leaderboard-table/spec.md) by any column.
 
 ## Tickets
 
-Not yet assigned. The tickets that built this feature are in [`subsidised-leaderboard/tickets/`](../subsidised-leaderboard/tickets/) until the ticket split; ticket numbers in this spec refer to that folder.
+None yet. Built in [leaderboard-table ticket 01](../leaderboard-table/tickets/01-base-api-rows-table.md).
