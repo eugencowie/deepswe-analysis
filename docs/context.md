@@ -15,8 +15,9 @@ _Avoid_: model row, result
 **Effort level**:
 The reasoning-effort setting a model was benchmarked at. Part of an entry's identity: the same model at two effort levels is two entries.
 
-**Best effort level**:
-The highest effort level a model was benchmarked at, with default effort ranking lowest. The Best view keeps only each model's best-effort entry — not necessarily its best Pass@1.
+**Best entry**:
+The leaderboard entry with the highest Pass@1 among a model's entries, compared on the raw fraction; on an exact tie the higher effort level wins. The Best view keeps only each model's best entry, which is often not its highest effort level. Chosen per model, so the same entry is best on every access route.
+_Avoid_: best effort level, highest effort
 
 **Access route**:
 How you would pay to run a model: direct API, or a specific subscription tier. Every table row is an entry combined with one access route.

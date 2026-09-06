@@ -384,12 +384,16 @@ describe("visibleRows", () => {
       entries: [
         entry("inverted", "max", 0.5),
         entry("inverted", "xhigh", 0.6),
-        entry("ordinary", "high", 0.4),
-        entry("ordinary", "xhigh", 0.3),
+        entry("ordinary", "high", 0.3),
+        entry("ordinary", "xhigh", 0.4),
+        // max listed before high so a last-tie-wins bug would pick high.
+        entry("tied", "max", 0.5),
+        entry("tied", "high", 0.5),
+        entry("tied", "xhigh", 0.4),
         entry("single", null, 0.7),
       ],
     };
-    const mapping = mappingFixture(["inverted", "ordinary", "single"]);
+    const mapping = mappingFixture(["inverted", "ordinary", "tied", "single"]);
     return createLeaderboard({ ...sources, snapshot, mapping });
   };
   const { rows, modelOptions } = leaderboard;
@@ -411,12 +415,33 @@ describe("visibleRows", () => {
     expect(visible.every((row) => row.accessRoute === "api")).toBe(true);
   });
 
-  test("Best keeps the highest effort, not the best Pass@1", () => {
-    // Mirrors claude-fable-5, whose xhigh entry outscores max while the
-    // DeepSWE site's Best view still shows max.
+  test("Best keeps each model's best entry: the highest Pass@1", () => {
+    // Mirrors claude-fable-5, whose xhigh entry outscores max; the DeepSWE
+    // site's Best view shows xhigh, and so do we.
     const visible = bestFixture().visibleRows(bestFixture().defaultFilters());
-    expect(visible.find((row) => row.model === "inverted")?.effort).toBe("max");
+    expect(visible.find((row) => row.model === "inverted")?.effort).toBe("xhigh");
     expect(visible.find((row) => row.model === "ordinary")?.effort).toBe("xhigh");
+  });
+
+  test("Best breaks an exact Pass@1 tie by the higher effort level", () => {
+    // Mirrors gpt-6-astra, whose high and max entries score identically.
+    const visible = bestFixture().visibleRows(bestFixture().defaultFilters());
+    expect(visible.find((row) => row.model === "tied")?.effort).toBe("max");
+  });
+
+  test("Best picks the same entry on every access route", () => {
+    const api = leaderboard.visibleRows(leaderboard.defaultFilters());
+    const onTier = leaderboard.visibleRows(
+      filters({
+        subscriptions: { ...leaderboard.defaultFilters().subscriptions, claude: "claude-max-20x" },
+      }),
+    );
+    const effortOf = (rows: typeof api, model: string) =>
+      rows.find((row) => row.model === model)?.effort;
+    expect(effortOf(onTier, "claude-fable-5")).toBe(effortOf(api, "claude-fable-5"));
+    expect(onTier.find((row) => row.model === "claude-fable-5")?.accessRoute).toBe(
+      "claude-max-20x",
+    );
   });
 
   test("Best keeps a single default-effort entry", () => {
