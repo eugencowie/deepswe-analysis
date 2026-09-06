@@ -234,27 +234,35 @@ export function toggleModel(filters: LeaderboardFilters, model: string): Leaderb
 }
 
 function filterRows(rows: LeaderboardRow[], filters: LeaderboardFilters): LeaderboardRow[] {
-  // Best keeps each model's highest-effort entry, not its best Pass@1 — for
-  // claude-fable-5 a lower effort scores higher and the DeepSWE site's Best
-  // view still shows the highest effort. A single-entry model keeps its entry.
-  const bestRank = new Map<string, number>();
+  // Best keeps each model's best entry: the highest Pass@1 on the raw
+  // fraction, with the higher effort level winning an exact tie. This is the
+  // DeepSWE site's rule; for claude-fable-5 it picks xhigh over max. Chosen
+  // per model, so every access route shows the same entry.
+  const bestEntry = new Map<string, LeaderboardRow>();
   if (filters.effortView === "best") {
     for (const row of rows) {
-      const rank = effortRank(row.effort);
-      if (rank > (bestRank.get(row.model) ?? -Infinity)) bestRank.set(row.model, rank);
+      const incumbent = bestEntry.get(row.model);
+      if (incumbent === undefined || outscores(row, incumbent)) bestEntry.set(row.model, row);
     }
   }
   return rows.filter(
     (row) =>
       filters.models.has(row.model) &&
       (row.family === "none" || filters.subscriptions[row.family] === row.accessRoute) &&
-      (filters.effortView === "all" || effortRank(row.effort) === bestRank.get(row.model)),
+      (filters.effortView === "all" || row.effort === bestEntry.get(row.model)?.effort),
   );
 }
 
-// Semantic effort order for the Model-sort tiebreak and the Best view; null
-// (default effort) ranks lowest, unknown efforts highest.
-const EFFORT_ORDER = ["low", "medium", "high", "xhigh", "max"];
+// The DeepSWE site's Best comparator: higher Pass@1, then higher effort.
+function outscores(row: LeaderboardRow, incumbent: LeaderboardRow): boolean {
+  if (row.passAt1 !== incumbent.passAt1) return row.passAt1 > incumbent.passAt1;
+  return effortRank(row.effort) > effortRank(incumbent.effort);
+}
+
+// Semantic effort order for the Model-sort tiebreak and the Best-view
+// tiebreak, matching the DeepSWE site; null (default effort) ranks lowest,
+// unknown efforts highest.
+const EFFORT_ORDER = ["minimal", "low", "medium", "high", "xhigh", "max"];
 
 function effortRank(effort: string | null): number {
   if (effort === null) return -1;

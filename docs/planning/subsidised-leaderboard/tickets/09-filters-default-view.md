@@ -35,6 +35,8 @@ Per the [spec](../spec.md) (App section). Vocabulary: Best effort level and Subs
 
 ## Comments
 
+2026-09-05: the Best rule described here is wrong. The DeepSWE site picks the highest Pass@1 per model, tiebreak higher effort. Superseded by [ticket 22](./22-best-view-picks-best-pass-at-1.md).
+
 Implemented 2026-08-24. Filtering is a pure `filterRows` in `src/data/filter.ts` applied in
 `App.tsx` before the table's sort memo; `LeaderboardRow` gained a `family` field so the
 Subscriptions picker can scope routes per family without a mapping lookup. The toolbar is

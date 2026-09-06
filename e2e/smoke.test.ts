@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import { createLeaderboard } from "../src/data/leaderboard.ts";
 import { deepsweSnapshot, modelMapping, throughputSnapshot, tiers } from "../src/data/sources.ts";
 
-// The default view: Best effort levels, API rows only (ticket 09).
+// The default view: best entries, API rows only (tickets 09 and 22).
 const leaderboard = createLeaderboard({
   snapshot: deepsweSnapshot,
   mapping: modelMapping,

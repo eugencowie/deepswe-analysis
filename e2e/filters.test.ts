@@ -16,8 +16,8 @@ test("the effort toggle switches between best and all entries", async ({ page })
   await page.goto("./");
 
   await expect(bodyRows(page)).toHaveCount(modelCount);
-  // Best keeps the highest effort even where a lower one scores better.
-  await expect(page.getByRole("cell", { name: "Claude Fable 5 [max]" })).toBeVisible();
+  // Best keeps the best Pass@1, which for Fable is xhigh rather than max.
+  await expect(page.getByRole("cell", { name: "Claude Fable 5 [xhigh]" })).toBeVisible();
 
   await page.getByRole("button", { name: "All effort levels" }).click();
   await expect(bodyRows(page)).toHaveCount(deepsweSnapshot.entries.length);
@@ -47,7 +47,9 @@ test("the subscriptions picker swaps a family to one tier and shows discounts", 
 
   await page.keyboard.press("Escape");
   // Claude rows carry the tier tag; ChatGPT rows are untouched API rows.
-  await expect(page.getByRole("cell", { name: /Claude Fable 5 \[max\]/ })).toContainText("Max 20x");
+  await expect(page.getByRole("cell", { name: /Claude Fable 5 \[xhigh\]/ })).toContainText(
+    "Max 20x",
+  );
   await expect(page.getByRole("cell", { name: "GPT-5.5 [xhigh]" })).toBeVisible();
 
   // Back to API: the trigger goes quiet again.
@@ -63,7 +65,7 @@ test("tier rows show the API cost struck out beside the effective cost", async (
   await page.keyboard.press("Escape");
 
   // One struck value in Avg cost, one in Cost/perf.
-  const fableRow = page.getByRole("row", { name: /Claude Fable 5 \[max\]/ });
+  const fableRow = page.getByRole("row", { name: /Claude Fable 5 \[xhigh\]/ });
   await expect(fableRow.locator("s")).toHaveCount(2);
   await expect(fableRow.locator("s").first()).toHaveText(/^\$/);
 });
