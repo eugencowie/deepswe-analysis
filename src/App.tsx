@@ -59,11 +59,11 @@ function App() {
           {/* Provenance: every figure on the page traces to one of these three. */}
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
             <SourceLink href={deepsweSnapshot.sourceUrl}>
-              DeepSWE v1.1 results from {snapshotDate}
+              DeepSWE results updated {snapshotDate}
             </SourceLink>
             .{" "}
             <SourceLink href={throughputSnapshot.sourceUrl}>
-              OpenRouter throughput from {throughputDate}
+              OpenRouter throughput updated {throughputDate}
             </SourceLink>
             .{" "}
             <SourceLink href={tiersSnapshot.sourceUrl}>
