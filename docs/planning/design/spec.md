@@ -10,14 +10,20 @@ record specific visual changes.
 - Keep the interface quiet and data-focused. Use neutral backgrounds, clear
   text and subtle separators so model names and results are easy to scan.
 - Use purple as the site's brand accent, shared by the logo and "enhanced"
-  in the title. Keep other colour purposeful, such as vendor marks and
-  labels that distinguish access routes.
+  in the title, and as the mark of an enhancement: the derived columns and
+  the Subscriptions picker carry a faint purple tint (brand at 5% and 8%
+  on the columns, 8% and 12% on the trigger; the larger area needs the
+  fainter wash to read as the same weight). Keep other colour purposeful,
+  such as vendor marks and labels that distinguish access routes.
 - Take inspiration from DeepSWE while giving the site its own identity. The
   logo pairs a neutral fan with a prominent purple rising curve; its detailed
   geometry belongs in [ticket 01](tickets/01-logo.md).
 - Use consistent sans-serif typography, spacing and control shapes. Establish
   hierarchy through size, weight and contrast, keeping secondary details
-  readable without competing with the results.
+  readable without competing with the results. The type scale is 11px
+  (header qualifiers such as "est"), 12px (provenance, effort levels),
+  13px, 14px (table body and controls), 15px (the masthead sentence) and
+  28px (the title).
 
 ## Layout and themes
 
@@ -29,11 +35,17 @@ record specific visual changes.
 - Keep related controls together and the table dense enough for comparison.
   On narrow screens, let controls wrap and the table scroll horizontally.
 - Let the table carry one visual encoding: Pass@1 drawn as a neutral grey
-  bar behind the figure on a fixed 0 to 100% scale. Purple is reserved for
-  what the site adds over DeepSWE: the three derived columns and the
-  Subscriptions trigger carry a faint purple tint. Other
-  columns stay plain figures. The sorted column header is the only header
-  in the foreground colour.
+  bar behind the figure on a fixed 0 to 100% scale, the figure in medium
+  weight so it stays legible over the bar. Purple is reserved for
+  enhancements: the three derived columns and the Subscriptions trigger.
+  Other columns stay plain figures. The sorted column header is the only
+  header in the foreground colour.
+- Mark estimated columns with a small muted "est" after the header name.
+  It stays muted when the column is sorted; only the name turns to the
+  foreground colour.
+- The effort level after a model name has both a real space (so the
+  accessible name and copied text read naturally) and a visual margin.
+  Neither replaces the other.
 - Support light and dark appearances throughout. Neutral colours and the
   purple accent adapt to the theme while preserving the same hierarchy.
   Theme behaviour is covered by the [dark-mode spec](../dark-mode/spec.md).

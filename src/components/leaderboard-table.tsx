@@ -43,18 +43,19 @@ type ColumnSpec = {
   id: ColumnId;
   header: string;
   tooltip?: string;
-  // A short word after the header, set smaller and muted: "est" marks a
-  // column whose figures are estimates rather than measurements.
-  qualifier?: string;
+  // Figures are estimates rather than measurements: the header carries a
+  // small muted "est" and the tooltip says what is left out.
+  estimate?: true;
   align: "left" | "right";
   firstDirection: SortDirection;
   // Derived columns are computed by this project rather than reported by the
-  // DeepSWE leaderboard; a brand-tinted background and a rule set them
-  // apart from the source columns, matching the Subscriptions trigger.
+  // DeepSWE leaderboard: an enhancement, so they carry the brand tint and a
+  // rule sets them apart from the source columns. The tint is fainter than
+  // the Subscriptions trigger's because it covers a large area.
   derived?: boolean;
-  // A 0..1 fraction drawn as a bar behind the cell, so the column's ranking
+  // A 0..1 fraction drawn as a bar behind the cell, so the column's order
   // reads at a glance. Pass@1 only: it is the one column on a fixed scale.
-  bar?: (row: LeaderboardRow) => number;
+  bar?: (row: LeaderboardRow) => number | null;
   cell: (row: LeaderboardRow) => ReactNode;
   compare: (
     a: LeaderboardRow,
@@ -64,23 +65,37 @@ type ColumnSpec = {
   ) => number;
 };
 
-function numericColumn(spec: {
+function numericColumn({
+  value,
+  bar,
+  ...spec
+}: {
   id: ColumnId;
   header: string;
   tooltip?: string;
-  qualifier?: string;
+  estimate?: true;
   derived?: boolean;
-  bar?: (row: LeaderboardRow) => number;
+  bar?: true; // draw the column's value as a bar; the value must be a 0..1 fraction
   value: (row: LeaderboardRow) => number | null;
   cell: (row: LeaderboardRow) => ReactNode;
 }): ColumnSpec {
   return {
     ...spec,
+    bar: bar ? value : undefined,
     align: "right",
     firstDirection: "desc",
-    compare: (a, b, direction) => compareBlankLast(spec.value(a), spec.value(b), direction),
+    compare: (a, b, direction) => compareBlankLast(value(a), value(b), direction),
   };
 }
+
+// Classes shared by a column's header and cells. Both are tinted and ruled
+// the same way so the two cannot drift apart.
+const columnClasses = (spec: ColumnSpec, index: number) =>
+  cn(
+    spec.align === "right" && "text-right",
+    spec.derived && "bg-brand/5 dark:bg-brand/8",
+    derivedBoundary(index) && "border-l border-brand/30",
+  );
 
 // Access tags are colour-coded by subscription family.
 const tagClassByFamily = {
@@ -130,7 +145,7 @@ const columnSpecs: ColumnSpec[] = [
   numericColumn({
     id: "passAt1",
     header: "Pass@1",
-    bar: (row) => row.passAt1,
+    bar: true,
     value: (row) => row.passAt1,
     cell: (row) => formatPassAt1(row.passAt1),
   }),
@@ -180,7 +195,7 @@ const columnSpecs: ColumnSpec[] = [
   numericColumn({
     id: "avgTime",
     header: "Time",
-    qualifier: "est",
+    estimate: true,
     tooltip:
       "Output tokens ÷ vendor API throughput; excludes tool execution and gaps between the agent's calls",
     derived: true,
@@ -190,7 +205,7 @@ const columnSpecs: ColumnSpec[] = [
   numericColumn({
     id: "tokPerSec",
     header: "Tok/s",
-    qualifier: "est",
+    estimate: true,
     tooltip:
       "p50 throughput of the vendor's own consumer API (via OpenRouter stats). Not the speed measured in the benchmark run",
     derived: true,
@@ -265,9 +280,9 @@ export function LeaderboardTable({
                   >
                     <table.FlexRender header={header} />
                   </span>
-                  {spec.qualifier && (
+                  {spec.estimate && (
                     <span className="ml-1 text-[11px] font-normal text-muted-foreground/80">
-                      {spec.qualifier}
+                      est
                     </span>
                   )}
                 </>
@@ -278,12 +293,7 @@ export function LeaderboardTable({
                   aria-sort={
                     isSorted ? (sort.direction === "asc" ? "ascending" : "descending") : undefined
                   }
-                  className={cn(
-                    spec.align === "right" && "text-right",
-                    spec.bar && "w-40",
-                    spec.derived && "bg-brand/5 dark:bg-brand/8",
-                    derivedBoundary(index) && "border-l border-brand/30",
-                  )}
+                  className={cn(columnClasses(spec, index), spec.bar && "w-40")}
                 >
                   <button
                     type="button"
@@ -329,18 +339,17 @@ export function LeaderboardTable({
           <TableRow key={row.id}>
             {row.getAllCells().map((cell, index) => {
               const spec = columnSpecs[index];
-              const bar = spec.bar?.(row.original);
+              const bar = spec.bar?.(row.original) ?? null;
               return (
                 <TableCell
                   key={cell.id}
                   className={cn(
                     "py-1.5",
-                    spec.align === "right" && "text-right tabular-nums",
-                    spec.derived && "bg-brand/5 dark:bg-brand/8",
-                    derivedBoundary(index) && "border-l border-brand/30",
+                    columnClasses(spec, index),
+                    spec.align === "right" && "tabular-nums",
                   )}
                 >
-                  {bar === undefined ? (
+                  {bar === null ? (
                     <table.FlexRender cell={cell} />
                   ) : (
                     <span className="relative block h-5 leading-5">

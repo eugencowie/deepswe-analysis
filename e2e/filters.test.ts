@@ -62,7 +62,7 @@ test("tier rows show the API cost struck out beside the effective cost", async (
   await page.getByRole("menuitemradio", { name: /Max 20x/ }).click();
   await page.keyboard.press("Escape");
 
-  // One struck value in Cost, one in $/solved.
+  // One struck value in Cost, one in Cost/perf.
   const fableRow = page.getByRole("row", { name: /Claude Fable 5 xhigh/ });
   await expect(fableRow.locator("s")).toHaveCount(2);
   await expect(fableRow.locator("s").first()).toHaveText(/^\$/);
@@ -73,8 +73,8 @@ test("changing filters never resets the sort and both picks surface in the trigg
 }) => {
   await page.goto("./");
   await page.getByRole("button", { name: "Cost", exact: true }).click();
-  const avgCost = page.getByRole("columnheader", { name: "Cost", exact: true });
-  await expect(avgCost).toHaveAttribute("aria-sort", "descending");
+  const cost = page.getByRole("columnheader", { name: "Cost", exact: true });
+  await expect(cost).toHaveAttribute("aria-sort", "descending");
 
   await page.getByRole("button", { name: "All effort levels" }).click();
   await page.getByRole("button", { name: /^Subscriptions/ }).click();
@@ -82,7 +82,7 @@ test("changing filters never resets the sort and both picks surface in the trigg
   await page.getByRole("menuitemradio", { name: /^Plus/ }).click();
   await page.keyboard.press("Escape");
 
-  await expect(avgCost).toHaveAttribute("aria-sort", "descending");
+  await expect(cost).toHaveAttribute("aria-sort", "descending");
   // Both non-API picks in the trigger, Claude first (section order).
   await expect(page.getByRole("button", { name: "Subscriptions: Max 5x · Plus" })).toBeVisible();
 });

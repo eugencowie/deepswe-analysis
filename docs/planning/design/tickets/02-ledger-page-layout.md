@@ -41,11 +41,12 @@ three in light and dark mode.
 - Effort levels lose their square brackets: "Claude Fable 5 xhigh" in a
   small muted weight. A real space precedes the word so copied text and
   the accessible name stay readable.
-- Column headers shorten to Cost, Out tokens, $/solved, Time, Tok/s. Time
+- Column headers shorten to Cost, Tokens, Cost/perf, Time, Tok/s. Time
   and Tok/s carry a small muted "est" after the name instead of the old
-  "(est)". The derived columns keep their tooltips and the separating rule. "Out
-  tokens" replaces the prototype's "Tokens" because the table has no
-  input-token column to disambiguate against.
+  "(est)". The derived columns keep their tooltips and the separating
+  rule. The prototype's "$/solved" was tried and reverted to "Cost/perf",
+  which reads as benchmark vocabulary to this audience; the tooltip
+  carries the definition.
 - Unsorted column headers are muted; the sorted one is in the foreground.
 
 ## Acceptance criteria
@@ -70,3 +71,12 @@ in the real page. The prototype branch still has it.
 and the three derived columns carry a faint brand tint, marking what the
 site adds over DeepSWE. The Pass@1 bar became neutral grey so purple means
 "enhanced" and nothing else.
+
+**2026-09-06**. Code review follow-up, decided with the user: headers are
+Cost, Tokens, Cost/perf, Time est, Tok/s est. The provenance line drops
+the benchmark version (the v1.1 chip has it). The Pass@1 figure stays
+medium weight over the bar. The effort word keeps both a real space and a
+margin. "est" stays muted on a sorted column. The derived-column tint is
+fainter than the trigger's on purpose. The glossary gained "Enhancement"
+for what purple marks. The column spec's `qualifier` string became an
+`estimate` flag and `bar` a flag that reuses the column's value.

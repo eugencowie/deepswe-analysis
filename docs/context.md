@@ -77,6 +77,10 @@ Output tokens ÷ throughput. Deliberately ignores latency, prompt processing, an
 **Source column**:
 A leaderboard column reported verbatim by the DeepSWE leaderboard (Pass@1, average cost, output tokens, steps).
 
+**Enhancement**:
+Anything the site adds over the DeepSWE leaderboard: the derived columns and the Subscriptions picker. Marked purple in the UI, the same colour as "enhanced" in the title.
+_Avoid_: extra, add-on, custom column
+
 **Derived column**:
 A leaderboard column this project computes rather than takes from the DeepSWE leaderboard (cost per solved task, average time, throughput). The distinction is per-column, not per-cell: effective cost on tier rows is computed, but the Cost column is still a source column.
 
