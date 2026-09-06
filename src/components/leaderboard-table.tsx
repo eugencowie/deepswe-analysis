@@ -150,7 +150,7 @@ const columnSpecs: ColumnSpec[] = [
   }),
   numericColumn({
     id: "outTok",
-    header: "Out tokens",
+    header: "Tokens",
     value: (row) => row.outputTokens,
     cell: (row) => formatTokens(row.outputTokens),
   }),
