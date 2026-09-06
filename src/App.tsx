@@ -47,9 +47,14 @@ function App() {
     // max-w-5xl: wide enough for tier rows' struck-out API costs.
     <div className="mx-auto flex min-h-svh max-w-5xl flex-col gap-4 p-6">
       <header className="flex items-center justify-between">
-        <h1 className="text-lg tracking-tight">
-          <span className="font-bold">DeepSWE</span>{" "}
-          <span className="font-light text-[#7e2fff] dark:text-[#a98aff]">enhanced</span>
+        <h1 className="flex items-center gap-2 text-lg tracking-tight">
+          <svg aria-hidden="true" className="brand-mark size-8 shrink-0" viewBox="0 0 160 144">
+            <use href={`${import.meta.env.BASE_URL}favicon.svg#mark`} />
+          </svg>
+          <span>
+            <span className="font-bold">DeepSWE</span>{" "}
+            <span className="font-light text-brand">enhanced</span>
+          </span>
         </h1>
         <ModeToggle />
       </header>
