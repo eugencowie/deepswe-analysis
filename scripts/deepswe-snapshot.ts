@@ -3,20 +3,10 @@
 
 import { z } from "zod";
 import type { DeepsweEntry, DeepsweSnapshot, ModelMappingEntry } from "../src/data/types.ts";
+import { type PriceRevision, costAdjustmentFactor } from "./deepswe-price-revisions.ts";
 
 export const origin = "https://deepswe.datacurve.ai";
 export const benchmarkVersion = "v1.1";
-
-// The site's retroactive repricing multipliers (docs/context.md: cost
-// adjustment factor) live in data/cost-adjustments.json; no first-party JSON
-// exposes them, so a human re-checks the deployed bundle and edits that file
-// during the version-bump workflow (automated-refresh ticket 04 reversed automated-refresh ticket 01's inline
-// constant). The shell loads it with this schema and passes factors in.
-export const costAdjustmentsSchema = z.object({
-  source: z.string().min(1),
-  sourceUrl: z.url(),
-  factors: z.record(z.string().min(1), z.number().positive()),
-});
 
 export const versionManifestSchema = z.object({
   latest: z.string(),
@@ -48,6 +38,10 @@ export const leaderboardArtifactSchema = z.object({
       config: z.string().min(1),
       pass_at_1: z.number().min(0).max(1),
       mean_cost_usd: z.number().nonnegative(),
+      // Required, not optional: the per-entry factor needs the token mix, and
+      // the site's silent no-adjustment fallback is what ticket 10 removed.
+      mean_input_tokens: z.number().nonnegative(),
+      mean_cache_tokens: z.number().nonnegative(),
       mean_output_tokens: z.number().nonnegative(),
       mean_agent_steps: z.number().nonnegative(),
       n_attempted: z.number().int().positive(),
@@ -94,7 +88,7 @@ export function normalize(
   manifest: VersionManifest,
   artifact: LeaderboardArtifact,
   mapping: ModelMappingEntry[],
-  costAdjustmentFactors: Readonly<Record<string, number>>,
+  priceRevisions: Readonly<Record<string, PriceRevision>>,
   rawSha256: string,
 ): { snapshot: DeepsweSnapshot; warnings: string[] } {
   const warnings: string[] = [];
@@ -129,11 +123,9 @@ export function normalize(
       `Mapping entries with no leaderboard rows (model removed upstream?): ${stale.join(", ")}.`,
     );
   }
-  const staleFactors = Object.keys(costAdjustmentFactors).filter(
-    (model) => !fetchedModels.has(model),
-  );
-  if (staleFactors.length > 0) {
-    warnings.push(`Cost adjustment factors with no leaderboard rows: ${staleFactors.join(", ")}.`);
+  const staleRevisions = Object.keys(priceRevisions).filter((model) => !fetchedModels.has(model));
+  if (staleRevisions.length > 0) {
+    warnings.push(`Price revisions with no leaderboard rows: ${staleRevisions.join(", ")}.`);
   }
 
   const seenConfigs = new Set<string>();
@@ -142,12 +134,20 @@ export function normalize(
       throw new Error(`Duplicate configuration "${row.config}" in the leaderboard artifact.`);
     }
     seenConfigs.add(row.config);
-    const factor = costAdjustmentFactors[row.model] ?? 1;
+    const tokens = {
+      input: row.mean_input_tokens,
+      cached: row.mean_cache_tokens,
+      output: row.mean_output_tokens,
+    };
+    const revision = priceRevisions[row.model];
+    const factor = revision ? costAdjustmentFactor(revision, tokens) : 1;
     return {
       model: row.model,
       effort: row.reasoning_effort,
       pass_at_1: row.pass_at_1,
       average_cost_usd: row.mean_cost_usd * factor,
+      input_tokens: row.mean_input_tokens,
+      cached_tokens: row.mean_cache_tokens,
       output_tokens: row.mean_output_tokens,
       steps: row.mean_agent_steps,
       source_config: row.config,
@@ -159,7 +159,7 @@ export function normalize(
 
   return {
     snapshot: {
-      schema_version: 1,
+      schema_version: 2,
       benchmark_version: benchmarkVersion,
       source: "DeepSWE leaderboard",
       sourceUrl: origin,
@@ -170,10 +170,7 @@ export function normalize(
       source_scope: artifact.scope,
       source_unit: artifact.unit,
       raw_sha256: rawSha256,
-      cost_adjustments: Object.entries(costAdjustmentFactors).map(([model, factor]) => ({
-        model,
-        factor,
-      })),
+      price_revisions: { ...priceRevisions },
       entries,
     },
     warnings,
@@ -190,8 +187,10 @@ export function summarizeRefresh(input: {
   mappingCount: number;
   generated: ModelMappingEntry[];
   changed: boolean;
+  // The revisions data/price-revisions.json held before this run.
+  previousPriceRevisions: Readonly<Record<string, PriceRevision>>;
 }): string {
-  const { existing, snapshot, mappingCount, generated, changed } = input;
+  const { existing, snapshot, mappingCount, generated, changed, previousPriceRevisions } = input;
   const modelCount = (s: DeepsweSnapshot) => new Set(s.entries.map((entry) => entry.model)).size;
   const lines = [
     "### DeepSWE data summary",
@@ -214,5 +213,56 @@ export function summarizeRefresh(input: {
       `Generated mapping entries: ${generated.map((entry) => entry.leaderboardModel).join(", ")}.`,
     );
   }
+  const revisionLines = priceRevisionsSection(previousPriceRevisions, existing, snapshot);
+  if (revisionLines.length > 0) {
+    lines.push("", ...revisionLines);
+  }
   return lines.join("\n");
+}
+
+// The site's price revisions differ from the checked-in file (ADR 0006): the
+// reviewer sees each changed model's old and new rates and every entry whose
+// factor moved as a result, since the file diff alone shows neither. Empty
+// when nothing changed.
+function priceRevisionsSection(
+  before: Readonly<Record<string, PriceRevision>>,
+  existing: DeepsweSnapshot | null,
+  snapshot: DeepsweSnapshot,
+): string[] {
+  const after = snapshot.price_revisions;
+  const models = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(
+    (model) => JSON.stringify(before[model]) !== JSON.stringify(after[model]),
+  );
+  if (models.length === 0) return [];
+  const rates = (revision: PriceRevision | undefined) =>
+    revision
+      ? `${revision.from.input} / ${revision.from.cached} / ${revision.from.output} → ` +
+        `${revision.to.input} / ${revision.to.cached} / ${revision.to.output}`
+      : "—";
+  const lines = [
+    "Price revisions changed in the site's bundle (USD per million input / cached / output tokens, old → new):",
+    "",
+    "| Model | Before | After |",
+    "| --- | --- | --- |",
+    ...models.map((model) => `| ${model} | ${rates(before[model])} | ${rates(after[model])} |`),
+  ];
+  // Factor, not cost: raw artifact drift in the same run is not a repricing.
+  const previous = new Map(existing?.entries.map((entry) => [entry.source_config, entry]) ?? []);
+  const moved = snapshot.entries.filter((entry) => {
+    const prior = previous.get(entry.source_config);
+    return prior && prior.cost_adjustment_factor !== entry.cost_adjustment_factor;
+  });
+  if (moved.length > 0) {
+    const usd = (value: number) => `$${value.toFixed(2)}`;
+    lines.push(
+      "",
+      "Entries whose average cost moved:",
+      "",
+      ...moved.map((entry) => {
+        const prior = previous.get(entry.source_config)!;
+        return `- ${entry.model} [${entry.effort ?? "default"}]: ${usd(prior.average_cost_usd)} → ${usd(entry.average_cost_usd)}`;
+      }),
+    );
+  }
+  return lines;
 }

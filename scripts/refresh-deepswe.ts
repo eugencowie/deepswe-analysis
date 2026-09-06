@@ -7,8 +7,14 @@ import { createHash, randomUUID } from "node:crypto";
 import { appendFile, readFile, writeFile } from "node:fs/promises";
 import type { DeepsweSnapshot, ModelMappingEntry } from "../src/data/types.ts";
 import {
+  extractBundlePriceTable,
+  indexBundlePaths,
+  priceRevisionsFileSchema,
+  resolvePriceRevisions,
+} from "./deepswe-price-revisions.ts";
+import {
   artifactUrl,
-  costAdjustmentsSchema,
+  benchmarkVersion,
   hasMeaningfulChange,
   leaderboardArtifactSchema,
   normalize,
@@ -23,8 +29,8 @@ import {
   openrouterModelsUrl,
 } from "./mapping-generation.ts";
 
-async function fetchBytes(url: string): Promise<Buffer> {
-  const response = await fetch(url, { headers: { accept: "application/json" } });
+async function fetchBytes(url: string, accept = "application/json"): Promise<Buffer> {
+  const response = await fetch(url, { headers: { accept } });
   if (!response.ok) {
     throw new Error(`${response.status} ${response.statusText}: ${url}`);
   }
@@ -41,10 +47,25 @@ const rawSha256 = createHash("sha256").update(artifactBytes).digest("hex");
 const mappingPath = new URL("../data/model-mapping.json", import.meta.url);
 const mapping = JSON.parse(await readFile(mappingPath, "utf8")) as ModelMappingEntry[];
 
-const costAdjustmentsPath = new URL("../data/cost-adjustments.json", import.meta.url);
-const { factors } = costAdjustmentsSchema.parse(
-  JSON.parse(await readFile(costAdjustmentsPath, "utf8")),
+// The site's price revisions live only in its deployed bundle (ADR 0006), so
+// every run extracts them and the checked-in file follows the site; the
+// change lands in the Refresh PR. Any extraction failure is a hard error:
+// warning and continuing is how the old factor table went stale (ticket 10).
+const priceRevisionsPath = new URL("../data/price-revisions.json", import.meta.url);
+const priceRevisionsFile = priceRevisionsFileSchema.parse(
+  JSON.parse(await readFile(priceRevisionsPath, "utf8")),
 );
+const indexHtml = (await fetchBytes(`${origin}/`, "text/html")).toString("utf8");
+const bundlePaths = indexBundlePaths(indexHtml);
+if (bundlePaths.length === 0) {
+  throw new Error(`No index-*.js bundle referenced by ${origin}/; cannot extract price revisions.`);
+}
+const bundles = await Promise.all(
+  bundlePaths.map(async (path) => (await fetchBytes(`${origin}${path}`, "*/*")).toString("utf8")),
+);
+const revisions = resolvePriceRevisions(extractBundlePriceTable(bundles), benchmarkVersion);
+const priceRevisionsChanged =
+  JSON.stringify(priceRevisionsFile.revisions) !== JSON.stringify(revisions);
 
 // New models from known vendors get generated mapping entries (ADR 0003);
 // anything still unmapped afterwards fails normalize's guard as before.
@@ -66,7 +87,7 @@ const { snapshot, warnings } = normalize(
   manifest,
   artifact,
   [...mapping, ...generated],
-  factors,
+  revisions,
   rawSha256,
 );
 for (const warning of warnings) {
@@ -75,6 +96,15 @@ for (const warning of warnings) {
 
 // Written only after normalize succeeds, so a tripped guard rail still leaves
 // everything untouched.
+if (priceRevisionsChanged) {
+  await writeFile(
+    priceRevisionsPath,
+    `${JSON.stringify({ ...priceRevisionsFile, revisions }, null, 2)}\n`,
+  );
+  console.log(
+    `Wrote data/price-revisions.json from the site's bundle: ${Object.keys(revisions).join(", ")}.`,
+  );
+}
 if (generated.length > 0) {
   await writeFile(mappingPath, `${JSON.stringify([...mapping, ...generated], null, 2)}\n`);
   console.log(
@@ -108,6 +138,7 @@ const summary = summarizeRefresh({
   mappingCount: mapping.length,
   generated,
   changed,
+  previousPriceRevisions: priceRevisionsFile.revisions,
 });
 if (process.env.GITHUB_OUTPUT) {
   // Unique delimiter per GitHub's guidance: the summary splices in

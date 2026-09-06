@@ -26,6 +26,8 @@ The [leaderboard artifact](https://deepswe.datacurve.ai/artifacts/v1.1/leaderboa
 
 ## The cost adjustment trap
 
+> Dated capture. By 2026-09-06 the bundle repriced seven models, including deepseek-v4-pro on v1.1, and stores per-token price revisions rather than factors; see [automated-refresh ticket 10](../../automated-refresh/tickets/10-cost-drift-repriced-models.md).
+
 The endpoint's cost values are not always the numbers rendered by the site. The deployed artifact loader recursively multiplies fields ending in `_cost_usd` for these v1.1 models:
 
 | Model | Display factor | Affected entries |

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
-import rawCostAdjustments from "../data/cost-adjustments.json" with { type: "json" };
+import rawPriceRevisions from "../data/price-revisions.json" with { type: "json" };
 import rawSnapshot from "../data/deepswe-v1.1.json" with { type: "json" };
 import type { ModelMappingEntry } from "../src/data/types.ts";
+import { type PriceRevision, priceRevisionsFileSchema } from "./deepswe-price-revisions.ts";
 import {
   type LeaderboardArtifact,
   type VersionManifest,
-  costAdjustmentsSchema,
   hasMeaningfulChange,
   summarizeRefresh,
   leaderboardArtifactSchema,
@@ -20,9 +20,15 @@ const manifest: VersionManifest = {
   ],
 };
 
-// Fixture table, not the real one: the checked-in factors live in
-// data/cost-adjustments.json and only their shape is asserted here.
-const factors: Readonly<Record<string, number>> = { "gpt-5-6-luna": 0.25 };
+// Fixture table, not the real one: the checked-in revisions live in
+// data/price-revisions.json and only their shape is asserted here. Uniform
+// 0.25, so every luna entry gets factor 0.25 whatever its token mix.
+const revisions: Readonly<Record<string, PriceRevision>> = {
+  "gpt-5-6-luna": {
+    from: { input: 4, cached: 0.4, output: 24 },
+    to: { input: 1, cached: 0.1, output: 6 },
+  },
+};
 
 function row(model: string, overrides: Partial<LeaderboardArtifact["rows"][number]> = {}) {
   return {
@@ -31,6 +37,8 @@ function row(model: string, overrides: Partial<LeaderboardArtifact["rows"][numbe
     config: `mini_swe_agent_${model}`,
     pass_at_1: 0.5,
     mean_cost_usd: 2,
+    mean_input_tokens: 3_000_000,
+    mean_cache_tokens: 2_500_000,
     mean_output_tokens: 50_000,
     mean_agent_steps: 60,
     n_attempted: 452,
@@ -70,7 +78,7 @@ describe("normalize", () => {
       manifest,
       artifact(allModels.map((model) => row(model))),
       mappingFor(allModels),
-      factors,
+      revisions,
       "abc123",
     );
     expect(warnings).toEqual([]);
@@ -84,12 +92,12 @@ describe("normalize", () => {
     expect(snapshot.entries).toHaveLength(2);
   });
 
-  it("applies the given cost adjustment factors and keeps raw values beside adjusted ones", () => {
+  it("applies the given price revisions per entry and keeps raw values beside adjusted ones", () => {
     const { snapshot } = normalize(
       manifest,
       artifact(allModels.map((model) => row(model, { mean_cost_usd: 2 }))),
       mappingFor(allModels),
-      factors,
+      revisions,
       "abc123",
     );
     const byModel = new Map(snapshot.entries.map((entry) => [entry.model, entry]));
@@ -97,13 +105,52 @@ describe("normalize", () => {
       average_cost_usd: 0.5,
       raw_average_cost_usd: 2,
       cost_adjustment_factor: 0.25,
+      input_tokens: 3_000_000,
+      cached_tokens: 2_500_000,
     });
     expect(byModel.get("claude-opus-5")).toMatchObject({
       average_cost_usd: 2,
       raw_average_cost_usd: 2,
       cost_adjustment_factor: 1,
     });
-    expect(snapshot.cost_adjustments).toEqual([{ model: "gpt-5-6-luna", factor: 0.25 }]);
+    expect(snapshot.schema_version).toBe(2);
+    expect(snapshot.price_revisions).toEqual(revisions);
+  });
+
+  // Ticket 10's worked example: a non-uniform revision yields a factor that
+  // depends on the entry's token mix, matching the site's rendered $1.67.
+  it("derives a token-mix factor for a non-uniform revision (deepseek-v4-pro max)", () => {
+    const revisions: Record<string, PriceRevision> = {
+      "deepseek-v4-pro": {
+        from: { input: 0.435, cached: 0.003625, output: 0.87 },
+        to: { input: 1.32, cached: 0.044, output: 3.96 },
+      },
+    };
+    const source = artifact([
+      row("deepseek-v4-pro", {
+        reasoning_effort: "max",
+        mean_cost_usd: 0.24138687892256638,
+        mean_input_tokens: 24191606.099557523,
+        mean_cache_tokens: 24049100.743362833,
+        mean_output_tokens: 105998.91814159292,
+      }),
+    ]);
+    const { snapshot } = normalize(
+      manifest,
+      source,
+      mappingFor(["deepseek-v4-pro"]),
+      revisions,
+      "abc123",
+    );
+    expect(snapshot.entries[0]).toMatchObject({
+      cost_adjustment_factor: 6.901879779721177,
+      average_cost_usd: 1.6660232187256647,
+    });
+  });
+
+  it("rejects a row without mean input or cached token counts", () => {
+    const { mean_input_tokens: _input, ...source } = row("claude-opus-5");
+    expect(() => leaderboardArtifactSchema.parse(artifact([source as never]))).toThrow();
   });
 
   it("warns without switching when the manifest's latest moves past the pin", () => {
@@ -111,7 +158,7 @@ describe("normalize", () => {
       { ...manifest, latest: "v1.2" },
       artifact(allModels.map((model) => row(model))),
       mappingFor(allModels),
-      factors,
+      revisions,
       "abc123",
     );
     expect(warnings).toEqual([expect.stringContaining("New DeepSWE version available: v1.2")]);
@@ -125,7 +172,7 @@ describe("normalize", () => {
         manifest,
         artifact([...allModels.map((model) => row(model)), row("new-model")]),
         mappingFor(allModels),
-        factors,
+        revisions,
         "abc123",
       ),
     ).toThrow(/new-model.*model-mapping\.json|model-mapping\.json.*new-model/);
@@ -136,29 +183,29 @@ describe("normalize", () => {
       manifest,
       artifact(allModels.map((model) => row(model))),
       mappingFor([...allModels, "retired-model"]),
-      factors,
+      revisions,
       "abc123",
     );
     expect(warnings).toEqual([expect.stringContaining("retired-model")]);
   });
 
-  it("warns when a cost adjustment factor has no leaderboard rows", () => {
+  it("warns when a price revision has no leaderboard rows", () => {
     const { warnings } = normalize(
       manifest,
       artifact([row("claude-opus-5")]),
       mappingFor(["claude-opus-5"]),
-      factors,
+      revisions,
       "abc123",
     );
     expect(warnings).toEqual([
-      expect.stringContaining("Cost adjustment factors with no leaderboard rows: gpt-5-6-luna"),
+      expect.stringContaining("Price revisions with no leaderboard rows: gpt-5-6-luna"),
     ]);
   });
 
   it("rejects duplicate configurations", () => {
     const duplicated = [row("claude-opus-5"), row("claude-opus-5", { pass_at_1: 0.6 })];
     expect(() =>
-      normalize(manifest, artifact(duplicated), mappingFor(allModels), factors, "abc123"),
+      normalize(manifest, artifact(duplicated), mappingFor(allModels), revisions, "abc123"),
     ).toThrow(/Duplicate configuration "mini_swe_agent_claude-opus-5"/);
   });
 
@@ -170,7 +217,7 @@ describe("normalize", () => {
       latest_job: { name: "job", finished_at: null },
     };
     expect(leaderboardArtifactSchema.parse(source).latest_job.finished_at).toBeNull();
-    const { snapshot } = normalize(manifest, source, mappingFor(allModels), factors, "abc123");
+    const { snapshot } = normalize(manifest, source, mappingFor(allModels), revisions, "abc123");
     expect(snapshot.source_latest_job).toEqual({ name: "job", finished_at: null });
   });
 
@@ -183,25 +230,24 @@ describe("normalize", () => {
   it("rejects a task-count disagreement between manifest and artifact", () => {
     const disagreeing = { ...artifact(allModels.map((model) => row(model))), n_tasks_in_set: 99 };
     expect(() =>
-      normalize(manifest, disagreeing, mappingFor(allModels), factors, "abc123"),
+      normalize(manifest, disagreeing, mappingFor(allModels), revisions, "abc123"),
     ).toThrow(/113.*99/);
   });
 });
 
-describe("cost adjustments file", () => {
+describe("price revisions file", () => {
   it("matches the schema the refresh script loads it with", () => {
-    const parsed = costAdjustmentsSchema.parse(rawCostAdjustments);
-    expect(Object.keys(parsed.factors).length).toBeGreaterThan(0);
+    const parsed = priceRevisionsFileSchema.parse(rawPriceRevisions);
+    expect(Object.keys(parsed.revisions).length).toBeGreaterThan(0);
   });
 
-  // Drift guard: the checked-in snapshot records the factor table it was
-  // built with; if a factor edit isn't followed by a refresh (or vice versa),
-  // the two files disagree and this catches it.
+  // Drift guard: the checked-in snapshot records the revisions it was built
+  // with; if a revision edit isn't followed by a refresh (or vice versa), the
+  // two files disagree and this catches it.
   it("agrees with the checked-in snapshot's recorded table", () => {
-    const expected = Object.entries(costAdjustmentsSchema.parse(rawCostAdjustments).factors).map(
-      ([model, factor]) => ({ model, factor }),
+    expect(rawSnapshot.price_revisions).toEqual(
+      priceRevisionsFileSchema.parse(rawPriceRevisions).revisions,
     );
-    expect(rawSnapshot.cost_adjustments).toEqual(expected);
   });
 });
 
@@ -209,7 +255,7 @@ describe("hasMeaningfulChange", () => {
   const snapshotFrom = (rows: LeaderboardArtifact["rows"], sha: string, generatedAt?: string) => {
     const source = artifact(rows);
     if (generatedAt) source.generated_at = generatedAt;
-    return normalize(manifest, source, mappingFor(allModels), factors, sha).snapshot;
+    return normalize(manifest, source, mappingFor(allModels), revisions, sha).snapshot;
   };
   const rows = allModels.map((model) => row(model));
 
@@ -229,7 +275,7 @@ describe("hasMeaningfulChange", () => {
     const existing = snapshotFrom(rows, "abc123");
     const source = artifact(rows);
     source.latest_job = { name: "newer-job", finished_at: null };
-    const next = normalize(manifest, source, mappingFor(allModels), factors, "def456").snapshot;
+    const next = normalize(manifest, source, mappingFor(allModels), revisions, "def456").snapshot;
     expect(hasMeaningfulChange(existing, next)).toBe(false);
   });
 
@@ -245,7 +291,7 @@ describe("hasMeaningfulChange", () => {
 
 describe("summarizeRefresh", () => {
   const snapshotFrom = (rows: LeaderboardArtifact["rows"]) =>
-    normalize(manifest, artifact(rows), mappingFor(allModels), factors, "abc123").snapshot;
+    normalize(manifest, artifact(rows), mappingFor(allModels), revisions, "abc123").snapshot;
   const rows = allModels.map((model) => row(model));
   const generatedEntry = mappingFor(["new-model"])[0]!;
 
@@ -256,6 +302,7 @@ describe("summarizeRefresh", () => {
       mappingCount: 25,
       generated: [],
       changed: true,
+      previousPriceRevisions: revisions,
     });
     expect(text.startsWith("### DeepSWE data summary")).toBe(true);
   });
@@ -268,6 +315,7 @@ describe("summarizeRefresh", () => {
       mappingCount: 25,
       generated: [],
       changed: true,
+      previousPriceRevisions: revisions,
     });
     expect(first).toContain(`| Leaderboard entries | — | ${snapshot.entries.length} |`);
     expect(first).toContain(`| Models | — | ${allModels.length} |`);
@@ -279,12 +327,64 @@ describe("summarizeRefresh", () => {
       mappingCount: 25,
       generated: [generatedEntry],
       changed: true,
+      previousPriceRevisions: revisions,
     });
     expect(later).toContain(
       `| Leaderboard entries | ${snapshot.entries.length} | ${snapshot.entries.length} |`,
     );
     expect(later).toContain("| Mapping entries | 25 | 26 |");
     expect(later).toContain("Generated mapping entries: new-model.");
+  });
+
+  it("lists changed price revisions with old and new rates and the entries they moved", () => {
+    const snapshot = snapshotFrom(rows);
+    const before = normalize(
+      manifest,
+      artifact(rows),
+      mappingFor(allModels),
+      {},
+      "abc123",
+    ).snapshot;
+    const text = summarizeRefresh({
+      existing: before,
+      snapshot,
+      mappingCount: 25,
+      generated: [],
+      changed: true,
+      previousPriceRevisions: {},
+    });
+    expect(text).toContain("Price revisions");
+    expect(text).toContain("| gpt-5-6-luna | — | 4 / 0.4 / 24 → 1 / 0.1 / 6 |");
+    expect(text).toContain("gpt-5-6-luna [default]: $2.00 → $0.50");
+  });
+
+  // Ticket 10's acceptance case: the file lost a model but the snapshot still
+  // carries it, so the table names the model and no entry moved.
+  it("diffs the table against the file, not the previous snapshot", () => {
+    const snapshot = snapshotFrom(rows);
+    const text = summarizeRefresh({
+      existing: snapshot,
+      snapshot,
+      mappingCount: 25,
+      generated: [],
+      changed: true,
+      previousPriceRevisions: {},
+    });
+    expect(text).toContain("| gpt-5-6-luna | — | 4 / 0.4 / 24 → 1 / 0.1 / 6 |");
+    expect(text).not.toContain("Entries whose average cost moved");
+  });
+
+  it("says nothing about price revisions when the table is unchanged", () => {
+    const snapshot = snapshotFrom(rows);
+    const text = summarizeRefresh({
+      existing: snapshot,
+      snapshot,
+      mappingCount: 25,
+      generated: [],
+      changed: true,
+      previousPriceRevisions: revisions,
+    });
+    expect(text).not.toContain("Price revisions");
   });
 
   it("states a no-op week explicitly", () => {
@@ -295,6 +395,7 @@ describe("summarizeRefresh", () => {
       mappingCount: 25,
       generated: [],
       changed: false,
+      previousPriceRevisions: revisions,
     });
     expect(text).toContain("No content change");
     expect(
@@ -304,6 +405,7 @@ describe("summarizeRefresh", () => {
         mappingCount: 25,
         generated: [],
         changed: true,
+        previousPriceRevisions: revisions,
       }),
     ).not.toContain("No content change");
   });

@@ -8,7 +8,7 @@ Seed by copying [research/deepswe-v1.1-leaderboard.normalized.json](../product-s
 
 ```ts
 type DeepsweSnapshot = {
-  schema_version: 1;
+  schema_version: 2;                // 2: price_revisions and per-entry token means (automated-refresh ticket 10)
   benchmark_version: "v1.1";
   source_url: string;
   source_generated_at: string;      // ISO timestamp from the artifact
@@ -17,7 +17,7 @@ type DeepsweSnapshot = {
   source_scope: string;
   source_unit: string;
   raw_sha256: string;               // hash of the upstream artifact this was derived from
-  cost_adjustments: { model: string; factor: number }[];
+  price_revisions: Record<string, PriceRevision>;  // the site's revisions the entries were adjusted with (ADR 0006)
   entries: DeepsweEntry[];
 };
 
@@ -26,12 +26,19 @@ type DeepsweEntry = {
   effort: string | null;            // null = model's default effort
   pass_at_1: number;                // fraction 0..1
   average_cost_usd: number;         // display-adjusted (see cost trap below)
+  input_tokens: number;             // per-attempt mean; cached_tokens is the subset served from cache
+  cached_tokens: number;
   output_tokens: number;            // per-attempt mean, includes reasoning tokens
   steps: number;                    // agent turns per attempt
   n_scored_attempts: number;
   source_config: string;
   raw_average_cost_usd: number;
-  cost_adjustment_factor: number;
+  cost_adjustment_factor: number;   // per entry, from the model's price revision and this entry's token mix
+};
+
+type PriceRevision = {              // USD per million tokens, old and new
+  from: { input: number; cached: number; output: number };
+  to: { input: number; cached: number; output: number };
 };
 ```
 

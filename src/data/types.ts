@@ -10,7 +10,7 @@ export type Provenance = {
 };
 
 export type DeepsweSnapshot = Provenance & {
-  schema_version: 1;
+  schema_version: 2; // 2: price_revisions replaced cost_adjustments, entries gained token means (ticket 10)
   benchmark_version: "v1.1";
   source_url: string;
   source_generated_at: string; // ISO timestamp from the artifact
@@ -19,7 +19,9 @@ export type DeepsweSnapshot = Provenance & {
   source_scope: string;
   source_unit: string;
   raw_sha256: string; // hash of the upstream artifact this was derived from
-  cost_adjustments: { model: string; factor: number }[];
+  // The site's price revisions the entries were adjusted with, resolved for
+  // the pinned version (docs/context.md, ADR 0006).
+  price_revisions: Record<string, PriceRevision>;
   entries: DeepsweEntry[];
 };
 
@@ -28,13 +30,21 @@ export type DeepsweEntry = {
   effort: string | null; // null = model's default effort
   pass_at_1: number; // fraction 0..1
   average_cost_usd: number; // display-adjusted
+  input_tokens: number; // per-attempt mean; cached_tokens is the subset served from cache
+  cached_tokens: number;
   output_tokens: number; // per-attempt mean, includes reasoning tokens
   steps: number; // agent turns per attempt
   n_scored_attempts: number;
   source_config: string;
   raw_average_cost_usd: number;
-  cost_adjustment_factor: number;
+  cost_adjustment_factor: number; // per entry: derived from the model's price revision and this entry's token mix
 };
+
+// USD per million input, cached-input, and output tokens.
+export type TokenRates = { input: number; cached: number; output: number };
+
+// Old and new rates, as the DeepSWE site's bundle states them (docs/context.md).
+export type PriceRevision = { from: TokenRates; to: TokenRates };
 
 export type ThroughputSnapshot = Provenance & {
   capturedAt: string;
