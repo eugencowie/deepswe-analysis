@@ -48,5 +48,8 @@ the toolbar renders `VendorMark` before the display name inside each
 checkbox item, relying on the item's existing `gap-2` for spacing. Verified
 by unit test, the e2e models-picker test, and a Playwright screenshot.
 Noted in passing: each inlined SVG carries its own `<title>`, so assistive
-tech sees a nested second image with the vendor name inside the labelled
-wrapper. Pre-existing in the table too; not changed here.
+tech saw a nested second image inside the labelled wrapper, and three titles
+named the mark rather than the vendor (Kimi, Qwen, Grok). Fixed here rather
+than in a ticket of its own: `VendorMark` now inlines the SVG with
+`aria-hidden`, leaving the files byte-identical and the wrapper's
+`aria-label` as the only accessible name. Applies to the table as well.

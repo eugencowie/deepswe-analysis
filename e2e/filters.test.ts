@@ -94,12 +94,11 @@ test("the models picker removes a model everywhere and can clear to empty", asyn
   await page.getByRole("button", { name: /^Models/ }).click();
 
   // Each item leads with its vendor mark, whose aria-label joins the name.
-  // `.first()`: the inlined SVG's own <title> exposes a second, nested image.
   const fable = page.getByRole("menuitemcheckbox", {
     name: "Anthropic Claude Fable 5",
     exact: true,
   });
-  await expect(fable.getByRole("img", { name: "Anthropic" }).first()).toBeVisible();
+  await expect(fable.getByRole("img", { name: "Anthropic" })).toBeVisible();
   await fable.click();
   await expect(bodyRows(page)).toHaveCount(modelCount - 1);
 
