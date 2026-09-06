@@ -35,7 +35,8 @@ three in light and dark mode.
   saying what the page compares, and the three source links as a
   provenance line beneath it. The footer is gone.
 - The toolbar sits on a rule directly above the table.
-- Pass@1 draws a purple bar behind the figure on a fixed 0 to 100% scale.
+- Pass@1 draws a bar behind the figure on a fixed 0 to 100% scale. Purple
+  in the prototype, neutral grey after the follow-up below.
   It is the only column with a bar; every other column is an open scale.
 - Effort levels lose their square brackets: "Claude Fable 5 xhigh" in a
   small muted weight. A real space precedes the word so copied text and
@@ -66,4 +67,5 @@ in the real page. The prototype branch still has it.
 
 **2026-09-06**. Follow-ups in the same session: the Subscriptions trigger
 and the three derived columns carry a faint brand tint, marking what the
-site adds over DeepSWE.
+site adds over DeepSWE. The Pass@1 bar became neutral grey so purple means
+"enhanced" and nothing else.

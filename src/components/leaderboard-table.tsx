@@ -333,7 +333,7 @@ export function LeaderboardTable({
                     <span className="relative block h-5 leading-5">
                       <span
                         aria-hidden
-                        className="absolute inset-y-0 left-0 rounded-r-sm bg-brand/18 dark:bg-brand/28"
+                        className="absolute inset-y-0 left-0 rounded-r-sm bg-foreground/10 dark:bg-foreground/15"
                         style={{ width: `${bar * 100}%` }}
                       />
                       <span className="relative pr-1 font-medium">
