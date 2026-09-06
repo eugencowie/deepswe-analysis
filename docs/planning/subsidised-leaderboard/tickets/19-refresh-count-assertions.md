@@ -8,8 +8,8 @@ Blocked by: none
 
 The first refresh PR produced by the known-vendor mapping workflow failed its `ready` job on 2026-08-27:
 
-- Pull request: <https://github.com/eugencowie/deepswe-extended/pull/18>
-- Workflow job: <https://github.com/eugencowie/deepswe-extended/actions/runs/33038737810/job/98407287223>
+- Pull request: <https://github.com/eugencowie/deepswe-enhanced/pull/18>
+- Workflow job: <https://github.com/eugencowie/deepswe-enhanced/actions/runs/33038737810/job/98407287223>
 - PR commit: `349986a4ae60dc27ef80d5b9b71d676237f74c69`
 - Base commit: `fabec10a80f915a9760336c015b2b05df012612b`
 

@@ -8,7 +8,7 @@ Blocked by: none
 
 The manually dispatched DeepSWE refresh failed on 2026-08-27:
 
-- Workflow run: <https://github.com/eugencowie/deepswe-extended/actions/runs/33029663809/job/98379004015>
+- Workflow run: <https://github.com/eugencowie/deepswe-enhanced/actions/runs/33029663809/job/98379004015>
 - Commit: `00ddd52155fd4aada46fa6687aeab0417e6ff40f`
 - Failure: `latest_job.finished_at` was `null`, while `leaderboardArtifactSchema` requires a string
 

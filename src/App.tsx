@@ -47,7 +47,10 @@ function App() {
     // max-w-5xl: wide enough for tier rows' struck-out API costs.
     <div className="mx-auto flex min-h-svh max-w-5xl flex-col gap-4 p-6">
       <header className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">DeepSWE Leaderboard, Extended</h1>
+        <h1 className="text-lg tracking-tight">
+          <span className="font-bold">DeepSWE</span>{" "}
+          <span className="font-light text-[#7e2fff] dark:text-[#a98aff]">enhanced</span>
+        </h1>
         <ModeToggle />
       </header>
       <main className="flex flex-col gap-4">

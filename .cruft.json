@@ -4,7 +4,7 @@
   "checkout": "v1.5.7",
   "context": {
     "cookiecutter": {
-      "project_slug": "deepswe-extended",
+      "project_slug": "deepswe-enhanced",
       "_copy_without_render": [
         ".github/renovate.json5",
         ".github/workflows/renovate.yml"
