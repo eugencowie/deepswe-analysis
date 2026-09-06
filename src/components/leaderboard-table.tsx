@@ -247,7 +247,6 @@ export function LeaderboardTable({
       <TableHeader>
         {table.getHeaderGroups().map((group) => (
           <TableRow key={group.id} className="text-muted-foreground">
-            <TableHead className="w-8 pr-0 text-right">#</TableHead>
             {/* Column order never changes, so headers zip with specs by index. */}
             {group.headers.map((header, index) => {
               const spec = columnSpecs[index];
@@ -304,19 +303,15 @@ export function LeaderboardTable({
         {rows.length === 0 && (
           <TableRow>
             <TableCell
-              colSpan={columnSpecs.length + 1}
+              colSpan={columnSpecs.length}
               className="py-8 text-center text-muted-foreground"
             >
               {empty}
             </TableCell>
           </TableRow>
         )}
-        {table.getRowModel().rows.map((row, position) => (
+        {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id}>
-            {/* Rank is the row's position in the current sort, not a stored value. */}
-            <TableCell className="py-1.5 pr-0 text-right text-xs text-muted-foreground tabular-nums">
-              {position + 1}
-            </TableCell>
             {row.getAllCells().map((cell, index) => {
               const spec = columnSpecs[index];
               const bar = spec.bar?.(row.original);

@@ -35,7 +35,6 @@ three in light and dark mode.
   saying what the page compares, and the three source links as a
   provenance line beneath it. The footer is gone.
 - The toolbar sits on a rule directly above the table.
-- A rank column shows each row's position in the current sort.
 - Pass@1 draws a purple bar behind the figure on a fixed 0 to 100% scale.
   It is the only column with a bar; every other column is an open scale.
 - Effort levels lose their square brackets: "Claude Fable 5 xhigh" in a
@@ -50,7 +49,7 @@ three in light and dark mode.
 ## Acceptance criteria
 
 - [x] Masthead, provenance line and rule above the toolbar
-- [x] Rank column and Pass@1 bar in both themes
+- [x] Pass@1 bar in both themes
 - [x] Effort level without brackets, accessible name keeps its space
 - [x] `vp run ready` and the e2e task pass
 
@@ -58,6 +57,9 @@ three in light and dark mode.
 
 **2026-09-06**. Prototyped and folded in. The prototype's own code was not
 promoted; the table component gained an optional `bar` on its column spec
-and the rank column, and App.tsx gained the masthead. The e2e filter tests
+and App.tsx gained the masthead. The e2e filter tests
 were updated for the new cell names and the "Cost" header. Verified light
 and dark with Playwright screenshots.
+
+**2026-09-06**. Rank column removed at the user's request after seeing it
+in the real page. The prototype branch still has it.

@@ -28,8 +28,8 @@ record specific visual changes.
   [ticket 02](tickets/02-ledger-page-layout.md).
 - Keep related controls together and the table dense enough for comparison.
   On narrow screens, let controls wrap and the table scroll horizontally.
-- Let the table carry one visual encoding: a rank column, and Pass@1 drawn
-  as a purple bar behind the figure on a fixed 0 to 100% scale. Other
+- Let the table carry one visual encoding: Pass@1 drawn as a purple bar
+  behind the figure on a fixed 0 to 100% scale. Other
   columns stay plain figures. The sorted column header is the only header
   in the foreground colour.
 - Support light and dark appearances throughout. Neutral colours and the
