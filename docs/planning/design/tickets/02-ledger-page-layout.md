@@ -41,8 +41,9 @@ three in light and dark mode.
 - Effort levels lose their square brackets: "Claude Fable 5 xhigh" in a
   small muted weight. A real space precedes the word so copied text and
   the accessible name stay readable.
-- Column headers shorten to Cost, Out tokens, $/solved, Time, Tok/s. The
-  derived columns keep their tooltips and the separating rule. "Out
+- Column headers shorten to Cost, Out tokens, $/solved, Time, Tok/s. Time
+  and Tok/s carry a small muted "est" after the name instead of the old
+  "(est)". The derived columns keep their tooltips and the separating rule. "Out
   tokens" replaces the prototype's "Tokens" because the table has no
   input-token column to disambiguate against.
 - Unsorted column headers are muted; the sorted one is in the foreground.

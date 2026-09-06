@@ -43,6 +43,9 @@ type ColumnSpec = {
   id: ColumnId;
   header: string;
   tooltip?: string;
+  // A short word after the header, set smaller and muted: "est" marks a
+  // column whose figures are estimates rather than measurements.
+  qualifier?: string;
   align: "left" | "right";
   firstDirection: SortDirection;
   // Derived columns are computed by this project rather than reported by the
@@ -65,6 +68,7 @@ function numericColumn(spec: {
   id: ColumnId;
   header: string;
   tooltip?: string;
+  qualifier?: string;
   derived?: boolean;
   bar?: (row: LeaderboardRow) => number;
   value: (row: LeaderboardRow) => number | null;
@@ -176,6 +180,7 @@ const columnSpecs: ColumnSpec[] = [
   numericColumn({
     id: "avgTime",
     header: "Time",
+    qualifier: "est",
     tooltip:
       "Output tokens ÷ vendor API throughput; excludes tool execution and gaps between the agent's calls",
     derived: true,
@@ -185,6 +190,7 @@ const columnSpecs: ColumnSpec[] = [
   numericColumn({
     id: "tokPerSec",
     header: "Tok/s",
+    qualifier: "est",
     tooltip:
       "p50 throughput of the vendor's own consumer API (via OpenRouter stats). Not the speed measured in the benchmark run",
     derived: true,
@@ -253,11 +259,18 @@ export function LeaderboardTable({
               const spec = columnSpecs[index];
               const isSorted = sort.columnId === spec.id;
               const label = (
-                <span
-                  className={cn(spec.tooltip && "underline decoration-dotted underline-offset-4")}
-                >
-                  <table.FlexRender header={header} />
-                </span>
+                <>
+                  <span
+                    className={cn(spec.tooltip && "underline decoration-dotted underline-offset-4")}
+                  >
+                    <table.FlexRender header={header} />
+                  </span>
+                  {spec.qualifier && (
+                    <span className="ml-1 text-[11px] font-normal text-muted-foreground/80">
+                      {spec.qualifier}
+                    </span>
+                  )}
+                </>
               );
               return (
                 <TableHead
