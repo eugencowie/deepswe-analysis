@@ -52,11 +52,11 @@ Blank cells render as "–". Rows are never hidden for missing data.
 
 Single page, one table, titled "DeepSWE enhanced" (page title and h1).
 
-- Columns (headers match DeepSWE's style where possible): Model, Pass@1, Avg cost, Out tok, Steps. Effort is **not** a column — it renders inside the Model cell as a DeepSWE-style bracket ("Claude Opus 5 [max]", nothing for default effort). The Model cell shows the leaderboard model id; [model data](../model-data/spec.md) replaces it with the display name and vendor mark.
+- Columns: a rank column (the row's position in the current sort, not sortable), then Model, Pass@1, Cost, Out tokens, Steps. Effort is **not** a column — it renders inside the Model cell as a small muted word after the name ("Claude Opus 5 max", nothing for default effort), preceded by a real space so the accessible name reads naturally. The Model cell shows the leaderboard model id; [model data](../model-data/spec.md) replaces it with the display name and vendor mark. Pass@1 draws a purple bar behind the figure on a fixed 0 to 100% scale ([design ticket 02](../design/tickets/02-ledger-page-layout.md)). Earlier revisions used DeepSWE's headers (Avg cost, Out tok) and bracketed effort; the design prototype shortened them.
 - Toolbar (mirrors the DeepSWE site's chrome — toggles left, dropdowns right; revised in effort-filter ticket 01's grilling, replacing the earlier vendor and effort-level filters): a static **v1.1** chip styled like an active toggle. The benchmark version is fixed; no disabled v1 control. The filter controls are specified by [effort filter](../effort-filter/spec.md), [model filter](../model-filter/spec.md), and [subscription filter](../subscription-filter/spec.md).
 - Number formatting: avg cost as standard two-decimal currency ($4.33, $0.61); sub-cent values collapse to $0.01 or $0.00. Pass@1 as a whole percent (no error margin, diverging from DeepSWE's "74%±4%"); output tokens in thousands with a k suffix (118k); steps as integers. (Revised during ticket 01 from three-significant-figure costs and one-decimal percents, after a side-by-side with the DeepSWE site.)
 - Attempt counts (`n_scored_attempts`) are not displayed anywhere, matching the DeepSWE site.
-- Footer: DeepSWE v1.1 snapshot date read from `source_generated_at` (ticket 01). Features that ship further data add their own lines.
+- Provenance line in the masthead: the DeepSWE v1.1 snapshot date read from `source_generated_at`, linked to the source (ticket 01, originally a footer line). Features that ship further data add their own sentence to the line.
 
 ## Acceptance criteria
 

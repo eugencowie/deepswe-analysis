@@ -78,7 +78,7 @@ Output tokens ÷ throughput. Deliberately ignores latency, prompt processing, an
 A leaderboard column reported verbatim by the DeepSWE leaderboard (Pass@1, average cost, output tokens, steps).
 
 **Derived column**:
-A leaderboard column this project computes rather than takes from the DeepSWE leaderboard (cost per solved task, average time, throughput). The distinction is per-column, not per-cell: effective cost on tier rows is computed, but "Avg cost" is still a source column.
+A leaderboard column this project computes rather than takes from the DeepSWE leaderboard (cost per solved task, average time, throughput). The distinction is per-column, not per-cell: effective cost on tier rows is computed, but the Cost column is still a source column.
 
 **Model mapping**:
 The reviewed link from a leaderboard model to its display name, vendor, OpenRouter id, subscription family, usage multiplier, and optional short name (falling back to the display name). Entries are written by hand or generated, always landing through human review.

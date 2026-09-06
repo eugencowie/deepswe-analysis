@@ -48,6 +48,9 @@ type ColumnSpec = {
   // Derived columns are computed by this project rather than reported by the
   // DeepSWE leaderboard; a border separates them from the source columns.
   derived?: boolean;
+  // A 0..1 fraction drawn as a bar behind the cell, so the column's ranking
+  // reads at a glance. Pass@1 only: it is the one column on a fixed scale.
+  bar?: (row: LeaderboardRow) => number;
   cell: (row: LeaderboardRow) => ReactNode;
   compare: (
     a: LeaderboardRow,
@@ -62,6 +65,7 @@ function numericColumn(spec: {
   header: string;
   tooltip?: string;
   derived?: boolean;
+  bar?: (row: LeaderboardRow) => number;
   value: (row: LeaderboardRow) => number | null;
   cell: (row: LeaderboardRow) => ReactNode;
 }): ColumnSpec {
@@ -102,7 +106,13 @@ const columnSpecs: ColumnSpec[] = [
               <TooltipContent>{row.openrouterId}</TooltipContent>
             </Tooltip>
           )}
-          {row.effort !== null && <span className="text-muted-foreground"> [{row.effort}]</span>}
+          {row.effort !== null && (
+            // A real space, so copied text and the accessible name stay readable.
+            <>
+              {" "}
+              <span className="ml-1 text-xs text-muted-foreground">{row.effort}</span>
+            </>
+          )}
           {row.accessTag && (
             <Badge variant="outline" className={cn("ml-2", tagClassByFamily[row.accessTag.family])}>
               {row.accessTag.label}
@@ -115,12 +125,13 @@ const columnSpecs: ColumnSpec[] = [
   numericColumn({
     id: "passAt1",
     header: "Pass@1",
+    bar: (row) => row.passAt1,
     value: (row) => row.passAt1,
     cell: (row) => formatPassAt1(row.passAt1),
   }),
   numericColumn({
     id: "avgCost",
-    header: "Avg cost",
+    header: "Cost",
     value: (row) => row.effectiveCostUsd,
     cell: (row) =>
       row.accessRoute === "api" ? (
@@ -134,7 +145,7 @@ const columnSpecs: ColumnSpec[] = [
   }),
   numericColumn({
     id: "outTok",
-    header: "Out tok",
+    header: "Out tokens",
     value: (row) => row.outputTokens,
     cell: (row) => formatTokens(row.outputTokens),
   }),
@@ -146,8 +157,8 @@ const columnSpecs: ColumnSpec[] = [
   }),
   numericColumn({
     id: "costPerf",
-    header: "Cost/perf",
-    tooltip: "Avg cost ÷ Pass@1: what you pay per task actually solved",
+    header: "$/solved",
+    tooltip: "Cost ÷ Pass@1: what you pay per task actually solved",
     derived: true,
     value: (row) => row.costPerSolvedTaskUsd,
     // Pass@1 = 0 blanks both values, rendering a single blank cell.
@@ -163,7 +174,7 @@ const columnSpecs: ColumnSpec[] = [
   }),
   numericColumn({
     id: "avgTime",
-    header: "Avg time (est)",
+    header: "Time",
     tooltip:
       "Output tokens ÷ vendor API throughput; excludes tool execution and gaps between the agent's calls",
     derived: true,
@@ -172,7 +183,7 @@ const columnSpecs: ColumnSpec[] = [
   }),
   numericColumn({
     id: "tokPerSec",
-    header: "Tok/s (est)",
+    header: "Tok/s",
     tooltip:
       "p50 throughput of the vendor's own consumer API (via OpenRouter stats). Not the speed measured in the benchmark run",
     derived: true,
@@ -235,7 +246,8 @@ export function LeaderboardTable({
     <Table>
       <TableHeader>
         {table.getHeaderGroups().map((group) => (
-          <TableRow key={group.id}>
+          <TableRow key={group.id} className="text-muted-foreground">
+            <TableHead className="w-8 pr-0 text-right">#</TableHead>
             {/* Column order never changes, so headers zip with specs by index. */}
             {group.headers.map((header, index) => {
               const spec = columnSpecs[index];
@@ -255,13 +267,17 @@ export function LeaderboardTable({
                   }
                   className={cn(
                     spec.align === "right" && "text-right",
+                    spec.bar && "w-40",
                     derivedBoundary(index) && "border-l",
                   )}
                 >
                   <button
                     type="button"
                     onClick={() => toggleSort(spec)}
-                    className="inline-flex cursor-pointer items-center gap-1 font-medium"
+                    className={cn(
+                      "inline-flex cursor-pointer items-center gap-1 font-medium",
+                      isSorted && "text-foreground",
+                    )}
                   >
                     {spec.tooltip ? (
                       <Tooltip>
@@ -288,26 +304,48 @@ export function LeaderboardTable({
         {rows.length === 0 && (
           <TableRow>
             <TableCell
-              colSpan={columnSpecs.length}
+              colSpan={columnSpecs.length + 1}
               className="py-8 text-center text-muted-foreground"
             >
               {empty}
             </TableCell>
           </TableRow>
         )}
-        {table.getRowModel().rows.map((row) => (
+        {table.getRowModel().rows.map((row, position) => (
           <TableRow key={row.id}>
-            {row.getAllCells().map((cell, index) => (
-              <TableCell
-                key={cell.id}
-                className={cn(
-                  columnSpecs[index].align === "right" && "text-right tabular-nums",
-                  derivedBoundary(index) && "border-l",
-                )}
-              >
-                <table.FlexRender cell={cell} />
-              </TableCell>
-            ))}
+            {/* Rank is the row's position in the current sort, not a stored value. */}
+            <TableCell className="py-1.5 pr-0 text-right text-xs text-muted-foreground tabular-nums">
+              {position + 1}
+            </TableCell>
+            {row.getAllCells().map((cell, index) => {
+              const spec = columnSpecs[index];
+              const bar = spec.bar?.(row.original);
+              return (
+                <TableCell
+                  key={cell.id}
+                  className={cn(
+                    "py-1.5",
+                    spec.align === "right" && "text-right tabular-nums",
+                    derivedBoundary(index) && "border-l",
+                  )}
+                >
+                  {bar === undefined ? (
+                    <table.FlexRender cell={cell} />
+                  ) : (
+                    <span className="relative block h-5 leading-5">
+                      <span
+                        aria-hidden
+                        className="absolute inset-y-0 left-0 rounded-r-sm bg-brand/18 dark:bg-brand/28"
+                        style={{ width: `${bar * 100}%` }}
+                      />
+                      <span className="relative pr-1 font-medium">
+                        <table.FlexRender cell={cell} />
+                      </span>
+                    </span>
+                  )}
+                </TableCell>
+              );
+            })}
           </TableRow>
         ))}
       </TableBody>
