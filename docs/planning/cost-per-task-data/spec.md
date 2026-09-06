@@ -8,7 +8,7 @@ Adds cost per solved task to the [leaderboard table](../leaderboard-table/spec.m
 
 ## App
 
-- Column: Cost/perf, after Avg cost. Header annotation with a tooltip: Cost/perf is the cost per solved task ("Avg cost ÷ Pass@1: what you pay per task actually solved").
+- Column: Cost/perf, after Steps and first of the derived columns. The header keeps DeepSWE's benchmark vocabulary rather than spelling out "cost per solved task" (a "$/solved" header was tried and reverted in [design ticket 02](../design/tickets/02-ledger-page-layout.md)); the tooltip carries the definition: "Cost ÷ Pass@1: what you pay per task actually solved".
 - Number formatting: cost/perf as standard two-decimal currency, like avg cost.
 
 ## Acceptance criteria

@@ -43,11 +43,19 @@ type ColumnSpec = {
   id: ColumnId;
   header: string;
   tooltip?: string;
+  // Figures are estimates rather than measurements: the header carries a
+  // small muted "est" and the tooltip says what is left out.
+  estimate?: true;
   align: "left" | "right";
   firstDirection: SortDirection;
   // Derived columns are computed by this project rather than reported by the
-  // DeepSWE leaderboard; a border separates them from the source columns.
+  // DeepSWE leaderboard: an enhancement, so they carry the brand tint and a
+  // rule sets them apart from the source columns. The tint is fainter than
+  // the Subscriptions trigger's because it covers a large area.
   derived?: boolean;
+  // A 0..1 fraction drawn as a bar behind the cell, so the column's order
+  // reads at a glance. Pass@1 only: it is the one column on a fixed scale.
+  bar?: (row: LeaderboardRow) => number | null;
   cell: (row: LeaderboardRow) => ReactNode;
   compare: (
     a: LeaderboardRow,
@@ -57,21 +65,37 @@ type ColumnSpec = {
   ) => number;
 };
 
-function numericColumn(spec: {
+function numericColumn({
+  value,
+  bar,
+  ...spec
+}: {
   id: ColumnId;
   header: string;
   tooltip?: string;
+  estimate?: true;
   derived?: boolean;
+  bar?: true; // draw the column's value as a bar; the value must be a 0..1 fraction
   value: (row: LeaderboardRow) => number | null;
   cell: (row: LeaderboardRow) => ReactNode;
 }): ColumnSpec {
   return {
     ...spec,
+    bar: bar ? value : undefined,
     align: "right",
     firstDirection: "desc",
-    compare: (a, b, direction) => compareBlankLast(spec.value(a), spec.value(b), direction),
+    compare: (a, b, direction) => compareBlankLast(value(a), value(b), direction),
   };
 }
+
+// Classes shared by a column's header and cells. Both are tinted and ruled
+// the same way so the two cannot drift apart.
+const columnClasses = (spec: ColumnSpec, index: number) =>
+  cn(
+    spec.align === "right" && "text-right",
+    spec.derived && "bg-brand/5 dark:bg-brand/8",
+    derivedBoundary(index) && "border-l border-brand/30",
+  );
 
 // Access tags are colour-coded by subscription family.
 const tagClassByFamily = {
@@ -102,7 +126,13 @@ const columnSpecs: ColumnSpec[] = [
               <TooltipContent>{row.openrouterId}</TooltipContent>
             </Tooltip>
           )}
-          {row.effort !== null && <span className="text-muted-foreground"> [{row.effort}]</span>}
+          {row.effort !== null && (
+            // A real space, so copied text and the accessible name stay readable.
+            <>
+              {" "}
+              <span className="ml-1 text-xs text-muted-foreground">{row.effort}</span>
+            </>
+          )}
           {row.accessTag && (
             <Badge variant="outline" className={cn("ml-2", tagClassByFamily[row.accessTag.family])}>
               {row.accessTag.label}
@@ -115,12 +145,13 @@ const columnSpecs: ColumnSpec[] = [
   numericColumn({
     id: "passAt1",
     header: "Pass@1",
+    bar: true,
     value: (row) => row.passAt1,
     cell: (row) => formatPassAt1(row.passAt1),
   }),
   numericColumn({
     id: "avgCost",
-    header: "Avg cost",
+    header: "Cost",
     value: (row) => row.effectiveCostUsd,
     cell: (row) =>
       row.accessRoute === "api" ? (
@@ -134,7 +165,7 @@ const columnSpecs: ColumnSpec[] = [
   }),
   numericColumn({
     id: "outTok",
-    header: "Out tok",
+    header: "Tokens",
     value: (row) => row.outputTokens,
     cell: (row) => formatTokens(row.outputTokens),
   }),
@@ -147,7 +178,7 @@ const columnSpecs: ColumnSpec[] = [
   numericColumn({
     id: "costPerf",
     header: "Cost/perf",
-    tooltip: "Avg cost ÷ Pass@1: what you pay per task actually solved",
+    tooltip: "Cost ÷ Pass@1: what you pay per task actually solved",
     derived: true,
     value: (row) => row.costPerSolvedTaskUsd,
     // Pass@1 = 0 blanks both values, rendering a single blank cell.
@@ -163,7 +194,8 @@ const columnSpecs: ColumnSpec[] = [
   }),
   numericColumn({
     id: "avgTime",
-    header: "Avg time (est)",
+    header: "Time",
+    estimate: true,
     tooltip:
       "Output tokens ÷ vendor API throughput; excludes tool execution and gaps between the agent's calls",
     derived: true,
@@ -172,7 +204,8 @@ const columnSpecs: ColumnSpec[] = [
   }),
   numericColumn({
     id: "tokPerSec",
-    header: "Tok/s (est)",
+    header: "Tok/s",
+    estimate: true,
     tooltip:
       "p50 throughput of the vendor's own consumer API (via OpenRouter stats). Not the speed measured in the benchmark run",
     derived: true,
@@ -235,17 +268,24 @@ export function LeaderboardTable({
     <Table>
       <TableHeader>
         {table.getHeaderGroups().map((group) => (
-          <TableRow key={group.id}>
+          <TableRow key={group.id} className="text-muted-foreground">
             {/* Column order never changes, so headers zip with specs by index. */}
             {group.headers.map((header, index) => {
               const spec = columnSpecs[index];
               const isSorted = sort.columnId === spec.id;
               const label = (
-                <span
-                  className={cn(spec.tooltip && "underline decoration-dotted underline-offset-4")}
-                >
-                  <table.FlexRender header={header} />
-                </span>
+                <>
+                  <span
+                    className={cn(spec.tooltip && "underline decoration-dotted underline-offset-4")}
+                  >
+                    <table.FlexRender header={header} />
+                  </span>
+                  {spec.estimate && (
+                    <span className="ml-1 text-[11px] font-normal text-muted-foreground/80">
+                      est
+                    </span>
+                  )}
+                </>
               );
               return (
                 <TableHead
@@ -253,15 +293,15 @@ export function LeaderboardTable({
                   aria-sort={
                     isSorted ? (sort.direction === "asc" ? "ascending" : "descending") : undefined
                   }
-                  className={cn(
-                    spec.align === "right" && "text-right",
-                    derivedBoundary(index) && "border-l",
-                  )}
+                  className={cn(columnClasses(spec, index), spec.bar && "w-40")}
                 >
                   <button
                     type="button"
                     onClick={() => toggleSort(spec)}
-                    className="inline-flex cursor-pointer items-center gap-1 font-medium"
+                    className={cn(
+                      "inline-flex cursor-pointer items-center gap-1 font-medium",
+                      isSorted && "text-foreground",
+                    )}
                   >
                     {spec.tooltip ? (
                       <Tooltip>
@@ -297,17 +337,35 @@ export function LeaderboardTable({
         )}
         {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id}>
-            {row.getAllCells().map((cell, index) => (
-              <TableCell
-                key={cell.id}
-                className={cn(
-                  columnSpecs[index].align === "right" && "text-right tabular-nums",
-                  derivedBoundary(index) && "border-l",
-                )}
-              >
-                <table.FlexRender cell={cell} />
-              </TableCell>
-            ))}
+            {row.getAllCells().map((cell, index) => {
+              const spec = columnSpecs[index];
+              const bar = spec.bar?.(row.original) ?? null;
+              return (
+                <TableCell
+                  key={cell.id}
+                  className={cn(
+                    "py-1.5",
+                    columnClasses(spec, index),
+                    spec.align === "right" && "tabular-nums",
+                  )}
+                >
+                  {bar === null ? (
+                    <table.FlexRender cell={cell} />
+                  ) : (
+                    <span className="relative block h-5 leading-5">
+                      <span
+                        aria-hidden
+                        className="absolute inset-y-0 left-0 rounded-r-sm bg-foreground/10 dark:bg-foreground/15"
+                        style={{ width: `${bar * 100}%` }}
+                      />
+                      <span className="relative pr-1 font-medium">
+                        <table.FlexRender cell={cell} />
+                      </span>
+                    </span>
+                  )}
+                </TableCell>
+              );
+            })}
           </TableRow>
         ))}
       </TableBody>
