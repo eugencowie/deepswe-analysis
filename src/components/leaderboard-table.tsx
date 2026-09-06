@@ -158,7 +158,7 @@ const columnSpecs: ColumnSpec[] = [
   }),
   numericColumn({
     id: "costPerf",
-    header: "$/solved",
+    header: "Cost/perf",
     tooltip: "Cost ÷ Pass@1: what you pay per task actually solved",
     derived: true,
     value: (row) => row.costPerSolvedTaskUsd,
