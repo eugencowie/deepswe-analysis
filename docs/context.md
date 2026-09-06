@@ -119,6 +119,10 @@ _Avoid_: live data, cache
 The single weekly pull request through which every snapshot change and generated mapping entry reaches main; the human review gate for all of them.
 _Avoid_: Friday PR, weekly PR, refresh PRs (plural)
 
+**Price revision**:
+The DeepSWE site's old and new list prices per million input, cached-input, and output tokens for a model, used to retroactively reprice that model's recorded costs. Published only inside the site's deployed bundle.
+_Avoid_: rate table, repricing, display-cost factors
+
 **Cost adjustment factor**:
-The DeepSWE site's retroactive repricing multiplier for a model's costs. The snapshot keeps raw values beside adjusted ones.
+The multiplier a price revision yields for one leaderboard entry: the entry's token mix priced at the new rates divided by the same mix at the old rates. Per entry, not per model; two effort levels of the same model can carry different factors. The snapshot keeps raw values beside adjusted ones.
 _Avoid_: display factor, repricing factor, display-cost factor
