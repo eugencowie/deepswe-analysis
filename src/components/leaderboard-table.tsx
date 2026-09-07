@@ -205,7 +205,8 @@ const columnSpecs: ColumnSpec[] = [
   numericColumn({
     id: "tokPerSec",
     header: "Tok/s",
-    estimate: true,
+    // A measurement (OpenRouter's p50), not an estimate: only Time, which is
+    // derived from it, carries "est".
     tooltip:
       "p50 throughput of the vendor's own consumer API (via OpenRouter stats). Not the speed measured in the benchmark run",
     derived: true,

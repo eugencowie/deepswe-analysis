@@ -38,7 +38,7 @@ Per row:
 - Access route is **not** a column — it renders inside the Model cell as a tag on tier rows (exact styling decided in ticket 01).
 - Tier-row Cost and Cost/perf cells show the API cost first, struck through and muted, then the effective value in normal weight (the Cost/perf struck value is API cost ÷ Pass@1; Pass@1 = 0 renders one blank cell, no struck blank). No per-cell "(e)" marker — the estimate caveat lives in the Subscriptions picker's disclaimer instead. Both columns sort by effective values. API-row Avg cost is the unadjusted average cost. (Strikeout added in subscription-filter ticket 01's grilling; the "(e)" removed in the same ticket's follow-up.)
 - Sub-cent costs collapse to $0.01 or $0.00, which is deliberate — tiny tier costs should read as "effectively free" rather than invite comparison of raw values.
-- Masthead provenance line: "Subscription costs are rough estimates from SemiAnalysis figures", linked to the source (ticket 01, originally a footer line).
+- Masthead provenance line: SemiAnalysis linked with the figures' publication date, as "SemiAnalysis (2026-06-10)" in the Sources list. The estimate caveat lives in the Subscriptions picker only (ticket 01 had "Subscription costs are rough estimates from SemiAnalysis figures" in the masthead; shortened in [design ticket 02](../design/tickets/02-ledger-page-layout.md)).
 
 ## Acceptance criteria
 

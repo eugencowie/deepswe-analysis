@@ -23,12 +23,13 @@ const leaderboard = createLeaderboard({
 // future refresh (a plain slice would take the offset-local date).
 const utcDate = (timestamp: string) => new Date(timestamp).toISOString().slice(0, 10);
 
-const snapshotDate = utcDate(deepsweSnapshot.source_generated_at);
-const throughputDate = utcDate(throughputSnapshot.capturedAt);
+const deepsweDate = utcDate(deepsweSnapshot.source_generated_at);
+const openrouterDate = utcDate(throughputSnapshot.capturedAt);
+const semianalysisDate = utcDate(tiersSnapshot.publishedAt);
 
 function SourceLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <a href={href} className="underline decoration-dotted underline-offset-4 hover:text-foreground">
+    <a href={href} className="underline underline-offset-4 hover:text-foreground">
       {children}
     </a>
   );
@@ -40,7 +41,7 @@ function App() {
 
   return (
     // max-w-5xl: wide enough for tier rows' struck-out API costs.
-    <div className="mx-auto flex min-h-svh max-w-5xl flex-col px-6 py-8">
+    <div className="mx-auto flex min-h-svh max-w-5xl flex-col px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex items-start justify-between gap-6">
         <div className="max-w-2xl">
           <h1 className="flex items-center gap-3 text-[28px] leading-none tracking-tight">
@@ -53,28 +54,23 @@ function App() {
             </span>
           </h1>
           <p className="mt-4 text-[15px] leading-relaxed text-pretty">
-            The DeepSWE coding-agent benchmark, plus what each solved task costs on the API or on a
-            Claude or ChatGPT subscription, and how long it takes at the vendor's real throughput.
+            DeepSWE's coding-agent leaderboard, plus what it doesn't report: cost per solved task,
+            time at the consumer API throughput, and the effective cost on a Claude or ChatGPT
+            subscription.
           </p>
-          {/* Provenance: every figure on the page traces to one of these three. */}
+          {/* Provenance: every figure on the page traces to one of these three,
+              listed in the order the sentence above mentions them. Each date is
+              the upstream figure's own age, not when this project fetched it. */}
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            <SourceLink href={deepsweSnapshot.sourceUrl}>
-              DeepSWE results updated {snapshotDate}
-            </SourceLink>
-            .{" "}
-            <SourceLink href={throughputSnapshot.sourceUrl}>
-              OpenRouter throughput updated {throughputDate}
-            </SourceLink>
-            .{" "}
-            <SourceLink href={tiersSnapshot.sourceUrl}>
-              Subscription costs are rough estimates from SemiAnalysis figures
-            </SourceLink>
-            .
+            Sources: <SourceLink href={deepsweSnapshot.sourceUrl}>DeepSWE</SourceLink> (
+            {deepsweDate}), <SourceLink href={throughputSnapshot.sourceUrl}>OpenRouter</SourceLink>{" "}
+            ({openrouterDate}), <SourceLink href={tiersSnapshot.sourceUrl}>SemiAnalysis</SourceLink>{" "}
+            ({semianalysisDate}).
           </p>
         </div>
         <ModeToggle />
       </header>
-      <main className="mt-8 flex flex-col gap-3 border-t pt-3">
+      <main className="mt-6 flex flex-col gap-3 border-t pt-3">
         <LeaderboardToolbar
           filters={filters}
           onChange={setFilters}
