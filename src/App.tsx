@@ -23,9 +23,9 @@ const leaderboard = createLeaderboard({
 // future refresh (a plain slice would take the offset-local date).
 const utcDate = (timestamp: string) => new Date(timestamp).toISOString().slice(0, 10);
 
-const snapshotDate = utcDate(deepsweSnapshot.source_generated_at);
-const throughputDate = utcDate(throughputSnapshot.capturedAt);
-const tiersDate = utcDate(tiersSnapshot.publishedAt);
+const deepsweDate = utcDate(deepsweSnapshot.source_generated_at);
+const openrouterDate = utcDate(throughputSnapshot.capturedAt);
+const semianalysisDate = utcDate(tiersSnapshot.publishedAt);
 
 function SourceLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
@@ -63,9 +63,9 @@ function App() {
               the upstream figure's own age, not when this project fetched it. */}
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
             Sources: <SourceLink href={deepsweSnapshot.sourceUrl}>DeepSWE</SourceLink> (
-            {snapshotDate}), <SourceLink href={throughputSnapshot.sourceUrl}>OpenRouter</SourceLink>{" "}
-            ({throughputDate}), <SourceLink href={tiersSnapshot.sourceUrl}>SemiAnalysis</SourceLink>{" "}
-            ({tiersDate}).
+            {deepsweDate}), <SourceLink href={throughputSnapshot.sourceUrl}>OpenRouter</SourceLink>{" "}
+            ({openrouterDate}), <SourceLink href={tiersSnapshot.sourceUrl}>SemiAnalysis</SourceLink>{" "}
+            ({semianalysisDate}).
           </p>
         </div>
         <ModeToggle />

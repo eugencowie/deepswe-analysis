@@ -2,7 +2,8 @@
 // describe the checked-in files completely, not just what the UI reads.
 
 // Every data file carries this provenance pair: the human-facing citation
-// whose URL the footer links (automated-refresh ticket 04). Distinct from the DeepSWE
+// whose URL the masthead's provenance line links (automated-refresh ticket 04;
+// a footer line at the time). Distinct from the DeepSWE
 // snapshot's `source_url`, which is the fetched artifact itself.
 export type Provenance = {
   source: string;
