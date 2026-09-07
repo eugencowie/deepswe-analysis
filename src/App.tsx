@@ -29,7 +29,7 @@ const tiersDate = utcDate(tiersSnapshot.publishedAt);
 
 function SourceLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <a href={href} className="underline decoration-dotted underline-offset-4 hover:text-foreground">
+    <a href={href} className="underline underline-offset-4 hover:text-foreground">
       {children}
     </a>
   );
@@ -41,7 +41,7 @@ function App() {
 
   return (
     // max-w-5xl: wide enough for tier rows' struck-out API costs.
-    <div className="mx-auto flex min-h-svh max-w-5xl flex-col px-6 py-8">
+    <div className="mx-auto flex min-h-svh max-w-5xl flex-col px-4 py-6 sm:px-6 sm:py-8">
       <header className="flex items-start justify-between gap-6">
         <div className="max-w-2xl">
           <h1 className="flex items-center gap-3 text-[28px] leading-none tracking-tight">

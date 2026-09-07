@@ -33,7 +33,9 @@ record specific visual changes.
   is no footer; every source is named in the masthead. See
   [ticket 02](tickets/02-ledger-page-layout.md).
 - Keep related controls together and the table dense enough for comparison.
-  On narrow screens, let controls wrap and the table scroll horizontally.
+  On narrow screens, let controls wrap and the table scroll horizontally,
+  and tighten the page padding (16px sides, 24px top and bottom, against
+  24px and 32px from the sm breakpoint up).
 - Let the table carry one visual encoding: Pass@1 drawn as a neutral grey
   bar behind the figure on a fixed 0 to 100% scale, the figure in medium
   weight so it stays legible over the bar. Purple is reserved for
@@ -42,7 +44,10 @@ record specific visual changes.
   header in the foreground colour.
 - Mark estimated columns with a small muted "est" after the header name.
   It stays muted when the column is sorted; only the name turns to the
-  foreground colour.
+  foreground colour. Time is estimated; Tok/s is a measurement and
+  carries no mark.
+- Underlines encode what a click does: solid for links (the provenance
+  line), dotted for headers that open a tooltip.
 - The effort level after a model name has both a real space (so the
   accessible name and copied text read naturally) and a visual margin.
   Neither replaces the other.
