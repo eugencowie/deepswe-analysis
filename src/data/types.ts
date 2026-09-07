@@ -94,6 +94,9 @@ export type Tier = {
 };
 
 export type TiersSnapshot = Provenance & {
+  // When SemiAnalysis published the figures (the linked post's date), not
+  // when they were transcribed: the masthead shows how old the numbers are.
+  publishedAt: string;
   tiers: Tier[];
 };
 

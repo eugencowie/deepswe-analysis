@@ -27,8 +27,8 @@ record specific visual changes.
 
 ## Layout and themes
 
-- Keep a single-page layout: a masthead (site identity, one sentence saying
-  what the page compares, the source links as a provenance line, and the
+- Keep a single-page layout: a masthead (site identity, a sentence naming
+  what the page adds over DeepSWE, the source links as a provenance line, and the
   theme control), a rule, the filter toolbar, then the leaderboard. There
   is no footer; every source is named in the masthead. See
   [ticket 02](tickets/02-ledger-page-layout.md).

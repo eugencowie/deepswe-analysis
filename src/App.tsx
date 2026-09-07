@@ -25,6 +25,7 @@ const utcDate = (timestamp: string) => new Date(timestamp).toISOString().slice(0
 
 const snapshotDate = utcDate(deepsweSnapshot.source_generated_at);
 const throughputDate = utcDate(throughputSnapshot.capturedAt);
+const tiersDate = utcDate(tiersSnapshot.publishedAt);
 
 function SourceLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
@@ -53,28 +54,23 @@ function App() {
             </span>
           </h1>
           <p className="mt-4 text-[15px] leading-relaxed text-pretty">
-            The DeepSWE coding-agent benchmark, plus what each solved task costs on the API or on a
-            Claude or ChatGPT subscription, and how long it takes at the vendor's real throughput.
+            DeepSWE's coding-agent leaderboard, plus what it doesn't report: cost per solved task,
+            time at the consumer API throughput, and the effective cost on a Claude or ChatGPT
+            subscription.
           </p>
-          {/* Provenance: every figure on the page traces to one of these three. */}
+          {/* Provenance: every figure on the page traces to one of these three,
+              listed in the order the sentence above mentions them. Each date is
+              the upstream figure's own age, not when this project fetched it. */}
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            <SourceLink href={deepsweSnapshot.sourceUrl}>
-              DeepSWE results updated {snapshotDate}
-            </SourceLink>
-            .{" "}
-            <SourceLink href={throughputSnapshot.sourceUrl}>
-              OpenRouter throughput updated {throughputDate}
-            </SourceLink>
-            .{" "}
-            <SourceLink href={tiersSnapshot.sourceUrl}>
-              Subscription costs are rough estimates from SemiAnalysis figures
-            </SourceLink>
-            .
+            Sources: <SourceLink href={deepsweSnapshot.sourceUrl}>DeepSWE</SourceLink> (
+            {snapshotDate}), <SourceLink href={throughputSnapshot.sourceUrl}>OpenRouter</SourceLink>{" "}
+            ({throughputDate}), <SourceLink href={tiersSnapshot.sourceUrl}>SemiAnalysis</SourceLink>{" "}
+            ({tiersDate}).
           </p>
         </div>
         <ModeToggle />
       </header>
-      <main className="mt-8 flex flex-col gap-3 border-t pt-3">
+      <main className="mt-6 flex flex-col gap-3 border-t pt-3">
         <LeaderboardToolbar
           filters={filters}
           onChange={setFilters}
