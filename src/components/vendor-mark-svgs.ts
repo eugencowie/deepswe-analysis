@@ -1,4 +1,4 @@
-import anthropicSvg from "@lobehub/icons-static-svg/icons/anthropic.svg?raw";
+import anthropicSvg from "@lobehub/icons-static-svg/icons/claude-color.svg?raw";
 import deepseekSvg from "@lobehub/icons-static-svg/icons/deepseek-color.svg?raw";
 import googleSvg from "@lobehub/icons-static-svg/icons/google-color.svg?raw";
 import kimiSvg from "@lobehub/icons-static-svg/icons/kimi.svg?raw";
