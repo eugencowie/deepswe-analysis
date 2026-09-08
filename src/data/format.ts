@@ -43,3 +43,8 @@ export function formatTierDiscount(discount: number): string {
   const percent = Math.round(discount * 1000) / 10;
   return `−${percent}%`;
 }
+
+// A tier's monthly price, whole dollars: "$20/mo".
+export function formatUsdPerMonth(value: number): string {
+  return `$${Math.round(value)}/mo`;
+}

@@ -39,7 +39,8 @@ record specific visual changes.
 - Let the table carry one visual encoding: Pass@1 drawn as a neutral grey
   bar behind the figure on a fixed 0 to 100% scale, the figure in medium
   weight so it stays legible over the bar. Purple is reserved for
-  enhancements: the three derived columns and the Subscriptions trigger.
+  enhancements: the three derived columns, the Subscriptions trigger and
+  the selected rung inside its route card.
   Other columns stay plain figures. The sorted column header is the only
   header in the foreground colour.
 - Mark estimated columns with a small muted "est" after the header name.

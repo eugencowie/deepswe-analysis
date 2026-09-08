@@ -44,6 +44,7 @@ export type UsageLimitNote = { name: string; tierDiscount: number };
 export type PickerTier = {
   id: TierId;
   shortLabel: string;
+  priceUsdPerMonth: number;
   // 1 − subsidisation factor at usage multiplier 1.0.
   tierDiscount: number;
   notes: UsageLimitNote[];
@@ -51,6 +52,7 @@ export type PickerTier = {
 
 export type PickerFamily = {
   family: Exclude<SubscriptionFamily, "none">;
+  vendor: string; // the family's vendor mark, from its mapping entries
   tiers: PickerTier[];
 };
 
@@ -105,11 +107,13 @@ export function createLeaderboard({
   const routeOrder: AccessRoute[] = ["api", ...tiers.map((tier) => tier.id)];
   const pickerFamilies = FAMILIES.map((family) => ({
     family,
+    vendor: mapping.find((entry) => entry.family === family)?.vendor ?? "",
     tiers: tiers
       .filter((tier) => tier.family === family)
       .map((tier) => ({
         id: tier.id,
         shortLabel: tier.shortLabel,
+        priceUsdPerMonth: tier.priceUsdPerMonth,
         tierDiscount: tierDiscount(tier, 1),
         notes: mapping.flatMap((entry) =>
           entry.family !== family || entry.usageMultiplier === 1

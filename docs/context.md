@@ -34,6 +34,10 @@ _Avoid_: subscription level, plan
 **Subscriptions picker**:
 The user-facing name of the access-route selector. Exactly one access route is selected per subscription family. "API" appears inside it even though API access is not a subscription; internal vocabulary stays "access route".
 
+**Route card**:
+The Subscriptions picker's popover: one column per subscription family, each a ladder of rungs (the API, then the family's tiers) with the tier's monthly price and tier discount on each rung.
+_Avoid_: plan card, plan picker
+
 **Subscription family**:
 Which vendor's tiers can run a model: ChatGPT, Claude, or none.
 
