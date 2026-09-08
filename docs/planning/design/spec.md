@@ -12,8 +12,12 @@ record specific visual changes.
 - Use purple as the site's brand accent, shared by the logo and "enhanced"
   in the title, and as the mark of an enhancement: the derived columns and
   the Subscriptions picker carry a faint purple tint (brand at 5% and 8%
-  on the columns, 8% and 12% on the trigger; the larger area needs the
-  fainter wash to read as the same weight). Keep other colour purposeful,
+  on the columns, 8% and 12% on the trigger and on the picker's popover;
+  the larger column area needs the fainter wash to read as the same
+  weight, while the popover matches its trigger; inside the popover, a
+  hovered rung, the selected rung, the edge and the rule above the
+  disclaimer are stronger brand steps, so no fill or edge inside the
+  popover is grey; secondary text stays muted). Keep other colour purposeful,
   such as vendor marks and labels that distinguish access routes.
 - Take inspiration from DeepSWE while giving the site its own identity. The
   logo pairs a neutral fan with a prominent purple rising curve; its detailed
@@ -22,7 +26,7 @@ record specific visual changes.
   hierarchy through size, weight and contrast, keeping secondary details
   readable without competing with the results. The type scale is 11px
   (header qualifiers such as "est"), 12px (provenance, effort levels),
-  13px, 14px (table body and controls), 15px (the masthead sentence) and
+  13px, 14px (table body and controls), 15px (the masthead sentence, the route card's discount figure) and
   28px (the title).
 
 ## Layout and themes
@@ -39,7 +43,8 @@ record specific visual changes.
 - Let the table carry one visual encoding: Pass@1 drawn as a neutral grey
   bar behind the figure on a fixed 0 to 100% scale, the figure in medium
   weight so it stays legible over the bar. Purple is reserved for
-  enhancements: the three derived columns and the Subscriptions trigger.
+  enhancements: the three derived columns and the Subscriptions picker,
+  trigger and popover.
   Other columns stay plain figures. The sorted column header is the only
   header in the foreground colour.
 - Mark estimated columns with a small muted "est" after the header name.

@@ -9,6 +9,7 @@ import {
   formatTierDiscount,
   formatTokens,
   formatUsd,
+  formatUsdPerMonth,
 } from "./format.ts";
 
 describe("formatUsd", () => {
@@ -94,5 +95,13 @@ describe("formatInteger", () => {
   test("rounds to a whole number", () => {
     expect(formatInteger(99.04)).toBe("99");
     expect(formatInteger(123.5)).toBe("124");
+  });
+});
+
+describe("formatUsdPerMonth", () => {
+  test("renders the published monthly price without rounding", () => {
+    expect(formatUsdPerMonth(20)).toBe("$20/mo");
+    expect(formatUsdPerMonth(200)).toBe("$200/mo");
+    expect(formatUsdPerMonth(22.5)).toBe("$22.5/mo");
   });
 });

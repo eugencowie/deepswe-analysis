@@ -33,13 +33,14 @@ const sources = {
 };
 const live = () => createLeaderboard(sources);
 
+// Synthetic family-"none" models: rows come from the snapshot.
 const mappingFixture = (models: string[]): ModelMappingEntry[] =>
   models.map((model) => ({
     leaderboardModel: model,
     displayName: model,
     vendor: "Test",
     openrouterId: null,
-    family: "none",
+    family: "none" as const,
     usageMultiplier: 1,
   }));
 
@@ -323,6 +324,8 @@ describe("pickerFamilies", () => {
 
   test("lists both families, Claude first, with their tiers in tiers.json order", () => {
     expect(pickerFamilies.map((f) => f.family)).toEqual(["claude", "chatgpt"]);
+    // The vendor mark for each column comes from the family's mapping entries.
+    expect(pickerFamilies.map((f) => f.vendor)).toEqual(["Anthropic", "OpenAI"]);
     expect(family("claude").tiers.map((tier) => tier.id)).toEqual([
       "claude-pro",
       "claude-max-5x",
@@ -335,12 +338,14 @@ describe("pickerFamilies", () => {
     ]);
   });
 
-  test("each tier carries its short label and tier-wide discount", () => {
+  test("each tier carries its short label, monthly price and tier-wide discount", () => {
     // claude-pro: 1 − 20/400 = 0.95; claude-max-20x: 1 − 200/8000 = 0.975.
     const pro = family("claude").tiers.find((tier) => tier.id === "claude-pro");
     expect(pro?.shortLabel).toBe("Pro");
+    expect(pro?.priceUsdPerMonth).toBe(20);
     expect(pro?.tierDiscount).toBeCloseTo(0.95, 10);
     const max20 = family("claude").tiers.find((tier) => tier.id === "claude-max-20x");
+    expect(max20?.priceUsdPerMonth).toBe(200);
     expect(max20?.tierDiscount).toBeCloseTo(0.975, 10);
   });
 

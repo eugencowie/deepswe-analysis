@@ -1,40 +1,31 @@
 import { ChevronDown } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { cn } from "@/components/ui/utils";
+import { RouteCard } from "@/components/route-card";
 import { VendorMark } from "@/components/vendor-mark";
-import { formatTierDiscount } from "@/data/format";
 import {
   setEffortView,
   setModels,
-  setRoute,
   toggleModel,
   type LeaderboardFilters,
   type ModelOption,
   type PickerFamily,
 } from "@/data/leaderboard";
-import type { AccessRoute } from "@/data/types";
 
 const effortViews = [
   { view: "best", label: "Best" },
   { view: "all", label: "All effort levels" },
 ] as const;
-
-const familyLabels = { claude: "Claude", chatgpt: "ChatGPT" } as const;
 
 export function LeaderboardToolbar({
   filters,
@@ -48,10 +39,10 @@ export function LeaderboardToolbar({
   pickerFamilies: PickerFamily[];
 }) {
   // The trigger surfaces only non-API picks: quiet on the default view, the
-  // chosen tiers at a glance otherwise (section order, Claude first).
-  const tierPicks = pickerFamilies.flatMap(({ family, tiers }) => {
+  // chosen tiers at a glance otherwise (column order, Claude first).
+  const tierPicks = pickerFamilies.flatMap(({ family, vendor, tiers }) => {
     const tier = tiers.find((t) => t.id === filters.subscriptions[family]);
-    return tier ? [tier.shortLabel] : [];
+    return tier ? [{ family, vendor, tier }] : [];
   });
 
   return (
@@ -73,61 +64,41 @@ export function LeaderboardToolbar({
       </ButtonGroup>
       <div className="ms-auto flex items-center gap-2">
         <DropdownMenu>
-          {/* Brand-tinted: subscription pricing is the feature the site adds. */}
+          {/* Brand-tinted: subscription pricing is the feature the site adds.
+              The trigger reads "Subscriptions" while both families are on
+              the API, and otherwise shows only the tier picks, each with its
+              vendor mark. The explicit label keeps the accessible name
+              prefixed and comma-separated: name-from-content pads a hidden
+              separator with spaces. */}
           <DropdownMenuTrigger
             render={
               <Button
                 variant="outline"
                 size="sm"
                 className="border-brand/40 bg-brand/8 text-brand hover:bg-brand/15 hover:text-brand aria-expanded:bg-brand/15 aria-expanded:text-brand dark:bg-brand/12 dark:hover:bg-brand/20 dark:aria-expanded:bg-brand/20"
+                aria-label={
+                  tierPicks.length === 0
+                    ? undefined
+                    : `Subscriptions: ${tierPicks.map(({ vendor, tier }) => `${vendor} ${tier.shortLabel}`).join(", ")}`
+                }
               />
             }
           >
-            Subscriptions{tierPicks.length > 0 && `: ${tierPicks.join(" · ")}`}
+            {tierPicks.length === 0 ? (
+              "Subscriptions"
+            ) : (
+              <span className="flex items-center gap-2">
+                {tierPicks.map(({ family, vendor, tier }) => (
+                  <span key={family} className="flex items-center gap-1">
+                    <VendorMark vendor={vendor} className="[&>svg]:size-3.5" />
+                    {tier.shortLabel}
+                  </span>
+                ))}
+              </span>
+            )}
             <ChevronDown data-icon="inline-end" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            {pickerFamilies.map(({ family, tiers }, index) => (
-              <DropdownMenuGroup key={family}>
-                {index > 0 && <DropdownMenuSeparator />}
-                <DropdownMenuLabel>{familyLabels[family]}</DropdownMenuLabel>
-                <DropdownMenuRadioGroup
-                  value={filters.subscriptions[family]}
-                  onValueChange={(route) =>
-                    onChange(setRoute(filters, family, route as AccessRoute))
-                  }
-                >
-                  <DropdownMenuRadioItem value="api" closeOnClick={false}>
-                    API
-                  </DropdownMenuRadioItem>
-                  {tiers.map((tier) => (
-                    <DropdownMenuRadioItem key={tier.id} value={tier.id} closeOnClick={false}>
-                      {tier.shortLabel}
-                      <span className="ms-auto flex gap-1">
-                        <Badge variant="outline" className="text-muted-foreground">
-                          {formatTierDiscount(tier.tierDiscount)}
-                        </Badge>
-                        {tier.notes.map((note) => (
-                          <Badge
-                            key={note.name}
-                            variant="outline"
-                            className="text-muted-foreground"
-                          >
-                            {note.name}: {formatTierDiscount(note.tierDiscount)}
-                          </Badge>
-                        ))}
-                      </span>
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuGroup>
-            ))}
-            <DropdownMenuSeparator />
-            <p className="px-3 py-2 text-xs text-muted-foreground">
-              Subscription costs are estimates: the struck-out API cost scaled by the tier's
-              discount.
-            </p>
-          </DropdownMenuContent>
+          <RouteCard filters={filters} onChange={onChange} pickerFamilies={pickerFamilies} />
         </DropdownMenu>
         <DropdownMenu>
           <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>

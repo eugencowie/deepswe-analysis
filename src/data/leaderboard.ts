@@ -44,6 +44,7 @@ export type UsageLimitNote = { name: string; tierDiscount: number };
 export type PickerTier = {
   id: TierId;
   shortLabel: string;
+  priceUsdPerMonth: number;
   // 1 − subsidisation factor at usage multiplier 1.0.
   tierDiscount: number;
   notes: UsageLimitNote[];
@@ -51,6 +52,7 @@ export type PickerTier = {
 
 export type PickerFamily = {
   family: Exclude<SubscriptionFamily, "none">;
+  vendor: string; // the family's vendor mark, from its mapping entries
   tiers: PickerTier[];
 };
 
@@ -105,11 +107,13 @@ export function createLeaderboard({
   const routeOrder: AccessRoute[] = ["api", ...tiers.map((tier) => tier.id)];
   const pickerFamilies = FAMILIES.map((family) => ({
     family,
+    vendor: familyVendor(mapping, family),
     tiers: tiers
       .filter((tier) => tier.family === family)
       .map((tier) => ({
         id: tier.id,
         shortLabel: tier.shortLabel,
+        priceUsdPerMonth: tier.priceUsdPerMonth,
         tierDiscount: tierDiscount(tier, 1),
         notes: mapping.flatMap((entry) =>
           entry.family !== family || entry.usageMultiplier === 1
@@ -268,6 +272,14 @@ function effortRank(effort: string | null): number {
   if (effort === null) return -1;
   const rank = EFFORT_ORDER.indexOf(effort);
   return rank === -1 ? EFFORT_ORDER.length : rank;
+}
+
+// The vendor mark for a family's picker column. Loaded data has mapping
+// entries from exactly one vendor per family (assertFamilyVendors), so the
+// first entry's vendor is the family's; synthetic fixtures without family
+// entries get an empty vendor, which VendorMark renders as nothing.
+function familyVendor(mapping: ModelMappingEntry[], family: PickerFamily["family"]): string {
+  return mapping.find((candidate) => candidate.family === family)?.vendor ?? "";
 }
 
 // What a dollar of API cost becomes on a tier. The usage multiplier scales the
