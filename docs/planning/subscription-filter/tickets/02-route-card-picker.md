@@ -10,7 +10,7 @@ What should the Subscriptions picker look like? Ticket 01's menu was a stock dro
 
 ## Prototype
 
-Four variants on the one route, switched by `?variant=` and a floating bar, inside the real toolbar above the real table. The full set lives on the throwaway branch `prototype/subscriptions-picker` (commit `1ac8f7a`), in `src/components/prototype-subscriptions-picker.tsx`; the design plan is the file's header comment.
+Four variants on the one route, switched by `?variant=` and a floating bar, inside the real toolbar above the real table. The variant code was discarded once the verdict was in; the descriptions below are the record.
 
 - A, inline plan rows: a second toolbar line with one segmented control per family, no menu.
 - B, one trigger per vendor: two brand-tinted triggers, each opening a short list with price and discount.
@@ -43,3 +43,14 @@ styled with `data-checked:bg-brand/12` in place of the vendored item's check ind
 popover is `w-[min(30rem,var(--available-width))]` with `sm:grid-cols-2`. The e2e trigger
 assertions changed from "Subscriptions: Max 5x · Plus" to
 "Subscriptions: Anthropic Max 5x OpenAI Plus".
+
+Grilled again 2026-09-08 over the review: the discount figure stays at 15px and the
+design spec's scale line is unchanged; the selected rung's price and Fable lines stay muted;
+the rung keeps its direct Base UI radio item; the extra e2e assertion (no Fable note on
+ChatGPT rungs) stays. The popover gained the brand wash with a brand 20% ring; after trying the
+pairs by hand the trigger's 8%/12% won over the columns' 5%/8% and a fainter 3%/5%, and a hovered or focused rung takes a faint brand
+fill rather than the menu's grey accent so nothing inside the card is grey. The design spec's purple line now names the Subscriptions picker, trigger
+and popover, and docs/context.md distinguishes a filter (a feature and its state) from a
+picker (the control that sets it) rather than renaming either. Verification: the dev build
+was checked by hand in place of a deploy check; the Playwright suite passes against the
+production build.

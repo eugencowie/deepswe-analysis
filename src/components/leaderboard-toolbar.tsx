@@ -34,14 +34,21 @@ const effortViews = [
 
 const familyLabels = { claude: "Claude", chatgpt: "ChatGPT" } as const;
 
-// A route-card rung: the vendored radio item's focus and disabled styling, but
-// the selected state is a brand fill (the page's "enhancement" tint) instead
-// of a check mark, which would crowd the discount figures.
+// The popover's brand wash: a translucent brand layer over the popover
+// colour at the trigger's pair (8% light, 12% dark), composited the same way
+// as the columns' `bg-brand/5` (a colour-mix in oklch drifts pink at low
+// chroma). The design spec records the pairs tried.
+const popoverWash = "bg-linear-to-b from-brand/8 to-brand/8 dark:from-brand/12 dark:to-brand/12";
+
+// A route-card rung: the vendored radio item's layout and disabled styling,
+// but hover and focus take a faint brand fill rather than the grey accent,
+// and the selected state is a stronger brand fill with brand text instead of
+// a check mark, which would crowd the discount figures.
 function RouteRung(props: MenuPrimitive.RadioItem.Props) {
   return (
     <MenuPrimitive.RadioItem
       closeOnClick={false}
-      className="flex cursor-default items-center gap-3 rounded-xl px-2.5 py-2 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-checked:bg-brand/12 data-checked:text-brand data-disabled:pointer-events-none data-disabled:opacity-50 dark:data-checked:bg-brand/16"
+      className="flex cursor-default items-center gap-3 rounded-xl px-2.5 py-2 text-sm outline-hidden select-none focus:not-data-checked:bg-brand/8 data-checked:bg-brand/15 data-checked:text-brand data-disabled:pointer-events-none data-disabled:opacity-50 dark:focus:not-data-checked:bg-brand/10 dark:data-checked:bg-brand/20"
       {...props}
     />
   );
@@ -117,7 +124,10 @@ export function LeaderboardToolbar({
           {/* A route card: one price ladder per family, side by side where
               there is room. The tier-wide discount is the one loud figure on
               each rung; the price and Fable's exception sit under it. */}
-          <DropdownMenuContent align="end" className="w-[min(30rem,var(--available-width))] p-2">
+          <DropdownMenuContent
+            align="end"
+            className={cn("w-[min(30rem,var(--available-width))] p-2 ring-brand/20", popoverWash)}
+          >
             <div className="grid gap-2 sm:grid-cols-2">
               {pickerFamilies.map(({ family, vendor, tiers }) => (
                 <DropdownMenuRadioGroup

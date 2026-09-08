@@ -31,6 +31,14 @@ _Avoid_: tier badge, plan label
 A paid ChatGPT or Claude subscription plan (e.g. claude-max-5x, chatgpt-plus).
 _Avoid_: subscription level, plan
 
+**Filter**:
+A feature and its state: what the user has applied to the leaderboard (effort view, models, access routes), held in `LeaderboardFilters`. Feature specs are named for their filter (effort-filter, model-filter, subscription-filter).
+_Avoid_: using "filter" for the toolbar control itself; that is a picker
+
+**Picker**:
+A toolbar control that sets one filter: the effort buttons, the Models menu, the Subscriptions picker. The Subscriptions picker changes pricing, never row count, so its filter never removes rows.
+_Avoid_: filter (for the control), selector, dropdown (as a name)
+
 **Subscriptions picker**:
 The user-facing name of the access-route selector. Exactly one access route is selected per subscription family. "API" appears inside it even though API access is not a subscription; internal vocabulary stays "access route".
 
