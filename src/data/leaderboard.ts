@@ -107,7 +107,7 @@ export function createLeaderboard({
   const routeOrder: AccessRoute[] = ["api", ...tiers.map((tier) => tier.id)];
   const pickerFamilies = FAMILIES.map((family) => ({
     family,
-    vendor: mapping.find((entry) => entry.family === family)?.vendor ?? "",
+    vendor: familyVendor(mapping, family),
     tiers: tiers
       .filter((tier) => tier.family === family)
       .map((tier) => ({
@@ -272,6 +272,19 @@ function effortRank(effort: string | null): number {
   if (effort === null) return -1;
   const rank = EFFORT_ORDER.indexOf(effort);
   return rank === -1 ? EFFORT_ORDER.length : rank;
+}
+
+// The vendor mark for a family's picker column. A family with no mapping
+// entry is a data bug: failing here beats a column that silently loses its
+// mark and its name from the trigger.
+function familyVendor(mapping: ModelMappingEntry[], family: PickerFamily["family"]): string {
+  const entry = mapping.find((candidate) => candidate.family === family);
+  if (entry === undefined) {
+    throw new Error(
+      `No model in data/model-mapping.json has family "${family}"; the Subscriptions picker needs one for its vendor mark.`,
+    );
+  }
+  return entry.vendor;
 }
 
 // What a dollar of API cost becomes on a tier. The usage multiplier scales the

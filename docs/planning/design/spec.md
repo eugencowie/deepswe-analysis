@@ -15,8 +15,9 @@ record specific visual changes.
   on the columns, 8% and 12% on the trigger and on the picker's popover;
   the larger column area needs the fainter wash to read as the same
   weight, while the popover matches its trigger; inside the popover, a
-  hovered rung, the selected rung and the edge are stronger brand steps
-  and nothing is grey). Keep other colour purposeful,
+  hovered rung, the selected rung, the edge and the rule above the
+  disclaimer are stronger brand steps, so no fill or edge inside the
+  popover is grey; secondary text stays muted). Keep other colour purposeful,
   such as vendor marks and labels that distinguish access routes.
 - Take inspiration from DeepSWE while giving the site its own identity. The
   logo pairs a neutral fan with a prominent purple rising curve; its detailed

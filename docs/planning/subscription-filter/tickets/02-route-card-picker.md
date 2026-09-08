@@ -12,9 +12,9 @@ What should the Subscriptions picker look like? Ticket 01's menu was a stock dro
 
 Four variants on the one route, switched by `?variant=` and a floating bar, inside the real toolbar above the real table. The variant code was discarded once the verdict was in; the descriptions below are the record.
 
-- A, inline plan rows: a second toolbar line with one segmented control per family, no menu.
+- A, inline route rows: a second toolbar line with one segmented control per family, no menu.
 - B, one trigger per vendor: two brand-tinted triggers, each opening a short list with price and discount.
-- C, route card (the prototype called it a plan card): one trigger, a popover of two side-by-side price ladders, the discount as the loud figure on each rung.
+- C, route card: one trigger, a popover of two side-by-side price ladders, the discount as the loud figure on each rung.
 - D, a sentence: "Priced as if you're on Claude [API] and ChatGPT [API]" with inline pills.
 
 ## Answer
@@ -39,7 +39,7 @@ Review follow-ups, same day: "plan" is a glossary-avoided word, so the card is a
 
 Implemented 2026-09-07. `PickerTier` gained `priceUsdPerMonth`. The toolbar's menu uses
 `DropdownMenuRadioGroup` per column with a local `RouteRung` on Base UI's `Menu.RadioItem`,
-styled with `data-checked:bg-brand/12` in place of the vendored item's check indicator. The
+styled with a brand fill (`data-checked:bg-brand/15`, 20% in dark) in place of the vendored item's check indicator. The
 popover is `w-[min(30rem,var(--available-width))]` with `sm:grid-cols-2`. The e2e trigger
 assertions changed from "Subscriptions: Max 5x · Plus" to
 "Subscriptions: Anthropic Max 5x OpenAI Plus".
@@ -54,3 +54,10 @@ and popover, and docs/context.md distinguishes a filter (a feature and its state
 picker (the control that sets it) rather than renaming either. Verification: the dev build
 was checked by hand in place of a deploy check; the Playwright suite passes against the
 production build.
+
+Review follow-ups 2026-09-08, second round: the brand 20% ring now applies in dark mode too
+(the vendored popover's dark ring override had survived the class merge) and the rule above
+the disclaimer takes the same tint; the card, its rung and its wash moved to
+`src/components/route-card.tsx`; the rung no longer accepts a className; the leaderboard
+builder throws when a subscription family has no mapping entry instead of silently dropping
+the vendor mark; the design spec's "nothing is grey" is scoped to fills and edges.
