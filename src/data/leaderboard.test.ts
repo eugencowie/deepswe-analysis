@@ -33,27 +33,16 @@ const sources = {
 };
 const live = () => createLeaderboard(sources);
 
-// Synthetic family-"none" models, plus one unused model per subscription
-// family: rows come from the snapshot, but the picker needs each family's
-// vendor from the mapping.
-const mappingFixture = (models: string[]): ModelMappingEntry[] => [
-  ...models.map((model) => ({
+// Synthetic family-"none" models: rows come from the snapshot.
+const mappingFixture = (models: string[]): ModelMappingEntry[] =>
+  models.map((model) => ({
     leaderboardModel: model,
     displayName: model,
     vendor: "Test",
     openrouterId: null,
     family: "none" as const,
     usageMultiplier: 1,
-  })),
-  ...(["claude", "chatgpt"] as const).map((family) => ({
-    leaderboardModel: `${family}-unused`,
-    displayName: `${family}-unused`,
-    vendor: "Test",
-    openrouterId: null,
-    family,
-    usageMultiplier: 1,
-  })),
-];
+  }));
 
 describe("rows", () => {
   const { rows } = live();
@@ -367,12 +356,6 @@ describe("pickerFamilies", () => {
     expect(pro?.notes).toEqual([{ name: "Fable", tierDiscount: expect.closeTo(0.9, 10) }]);
     const max20 = family("claude").tiers.find((tier) => tier.id === "claude-max-20x");
     expect(max20?.notes).toEqual([{ name: "Fable", tierDiscount: expect.closeTo(0.95, 10) }]);
-  });
-
-  test("a family with no mapping entry fails the build instead of losing its mark", () => {
-    const mapping = mappingFixture([]).filter((entry) => entry.family !== "chatgpt");
-    const snapshot = { ...deepsweSnapshot, entries: [] };
-    expect(() => createLeaderboard({ ...sources, snapshot, mapping })).toThrow(/"chatgpt"/);
   });
 
   test("standard-limit families have no notes", () => {

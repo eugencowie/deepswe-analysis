@@ -99,8 +99,9 @@ describe("formatInteger", () => {
 });
 
 describe("formatUsdPerMonth", () => {
-  test("renders a whole-dollar monthly price", () => {
+  test("renders the published monthly price without rounding", () => {
     expect(formatUsdPerMonth(20)).toBe("$20/mo");
     expect(formatUsdPerMonth(200)).toBe("$200/mo");
+    expect(formatUsdPerMonth(22.5)).toBe("$22.5/mo");
   });
 });

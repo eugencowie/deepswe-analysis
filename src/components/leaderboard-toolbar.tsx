@@ -67,30 +67,34 @@ export function LeaderboardToolbar({
           {/* Brand-tinted: subscription pricing is the feature the site adds.
               The trigger reads "Subscriptions" while both families are on
               the API, and otherwise shows only the tier picks, each with its
-              vendor mark; a hidden prefix keeps the accessible name stable. */}
+              vendor mark. The explicit label keeps the accessible name
+              prefixed and comma-separated: name-from-content pads a hidden
+              separator with spaces. */}
           <DropdownMenuTrigger
             render={
               <Button
                 variant="outline"
                 size="sm"
                 className="border-brand/40 bg-brand/8 text-brand hover:bg-brand/15 hover:text-brand aria-expanded:bg-brand/15 aria-expanded:text-brand dark:bg-brand/12 dark:hover:bg-brand/20 dark:aria-expanded:bg-brand/20"
+                aria-label={
+                  tierPicks.length === 0
+                    ? undefined
+                    : `Subscriptions: ${tierPicks.map(({ vendor, tier }) => `${vendor} ${tier.shortLabel}`).join(", ")}`
+                }
               />
             }
           >
             {tierPicks.length === 0 ? (
               "Subscriptions"
             ) : (
-              <>
-                <span className="sr-only">Subscriptions: </span>
-                <span className="flex items-center gap-2">
-                  {tierPicks.map(({ family, vendor, tier }) => (
-                    <span key={family} className="flex items-center gap-1">
-                      <VendorMark vendor={vendor} className="[&>svg]:size-3.5" />
-                      {tier.shortLabel}
-                    </span>
-                  ))}
-                </span>
-              </>
+              <span className="flex items-center gap-2">
+                {tierPicks.map(({ family, vendor, tier }) => (
+                  <span key={family} className="flex items-center gap-1">
+                    <VendorMark vendor={vendor} className="[&>svg]:size-3.5" />
+                    {tier.shortLabel}
+                  </span>
+                ))}
+              </span>
             )}
             <ChevronDown data-icon="inline-end" />
           </DropdownMenuTrigger>

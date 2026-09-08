@@ -92,7 +92,7 @@ test("changing filters never resets the sort and both picks surface in the trigg
   await expect(cost).toHaveAttribute("aria-sort", "descending");
   // Both non-API picks in the trigger, Claude first (column order).
   await expect(
-    page.getByRole("button", { name: "Subscriptions: Anthropic Max 5x OpenAI Plus" }),
+    page.getByRole("button", { name: "Subscriptions: Anthropic Max 5x, OpenAI Plus" }),
   ).toBeVisible();
 });
 

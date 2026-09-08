@@ -1,7 +1,12 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { assertMappingCoverage, deepsweSnapshotSchema, modelMappingSchema } from "./schema.ts";
-import { deepsweSnapshot, modelMapping } from "./sources.ts";
+import {
+  assertFamilyVendors,
+  assertMappingCoverage,
+  deepsweSnapshotSchema,
+  modelMappingSchema,
+} from "./schema.ts";
+import { deepsweSnapshot, modelMapping, tiers } from "./sources.ts";
 
 // Importing sources.ts already parses the committed files, so the accepting
 // path is exercised by every test run; these pin the rejections (ADR 0004).
@@ -40,5 +45,22 @@ describe("assertMappingCoverage", () => {
   test("rejects a mapping entry matching no snapshot model", () => {
     const orphaned = [...modelMapping, { ...modelMapping[0], leaderboardModel: "ghost-model" }];
     expect(() => assertMappingCoverage(deepsweSnapshot, orphaned)).toThrowError(/ghost-model/);
+  });
+});
+
+describe("assertFamilyVendors", () => {
+  test("rejects a tier family with no mapping entry", () => {
+    const mapping = modelMapping.filter((entry) => entry.family !== "chatgpt");
+    expect(() => assertFamilyVendors(tiers, mapping)).toThrowError(/"chatgpt"/);
+  });
+
+  test("rejects a family whose entries span two vendors", () => {
+    const first = modelMapping.find((entry) => entry.family === "claude");
+    if (first === undefined) throw new Error("fixture needs a claude entry");
+    const mapping = [
+      ...modelMapping,
+      { ...first, leaderboardModel: "ghost-model", vendor: "Ghost" },
+    ];
+    expect(() => assertFamilyVendors(tiers, mapping)).toThrowError(/spans vendors.*Ghost/);
   });
 });

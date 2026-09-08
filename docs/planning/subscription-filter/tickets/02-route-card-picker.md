@@ -22,7 +22,7 @@ Four variants on the one route, switched by `?variant=` and a floating bar, insi
 C, grilled 2026-09-07 with three changes from the prototype:
 
 - The rung's right side shows the percentage discount ("−95%", semibold at 15px, the largest step in the type scale below the title) with "Fable: −90%" beneath in small muted text, instead of the prototype's cents per API dollar. The Fable footnote paragraph goes; the rung carries the note.
-- The trigger reads plain "Subscriptions" while both families are on the API. Otherwise it shows only the tier picks, each with its vendor mark, and a visually hidden "Subscriptions:" prefix keeps the accessible name stable for screen readers and the e2e tests.
+- The trigger reads plain "Subscriptions" while both families are on the API. Otherwise it shows only the tier picks, each with its vendor mark, and an explicit label keeps the accessible name stable ("Subscriptions: Anthropic Max 5x, OpenAI Plus") for screen readers and the e2e tests.
 - Below the `sm` breakpoint the columns stack, and the popover width is capped to the viewport.
 
 Kept from the prototype: monthly price under each tier label, the "full price" caption on the API rung, brand fill for the selected rung with no check mark, and the estimate disclaimer under a separator.
@@ -42,7 +42,7 @@ Implemented 2026-09-07. `PickerTier` gained `priceUsdPerMonth`. The toolbar's me
 styled with a brand fill (`data-checked:bg-brand/15`, 20% in dark) in place of the vendored item's check indicator. The
 popover is `w-[min(30rem,var(--available-width))]` with `sm:grid-cols-2`. The e2e trigger
 assertions changed from "Subscriptions: Max 5x · Plus" to
-"Subscriptions: Anthropic Max 5x OpenAI Plus".
+"Subscriptions: Anthropic Max 5x OpenAI Plus" (comma added in the third review).
 
 Grilled again 2026-09-08 over the review: the discount figure stays at 15px and the
 design spec's scale line is unchanged; the selected rung's price and Fable lines stay muted;
@@ -58,6 +58,12 @@ production build.
 Review follow-ups 2026-09-08, second round: the brand 20% ring now applies in dark mode too
 (the vendored popover's dark ring override had survived the class merge) and the rule above
 the disclaimer takes the same tint; the card, its rung and its wash moved to
-`src/components/route-card.tsx`; the rung no longer accepts a className; the leaderboard
-builder throws when a subscription family has no mapping entry instead of silently dropping
-the vendor mark; the design spec's "nothing is grey" is scoped to fills and edges.
+`src/components/route-card.tsx`; the rung no longer accepts a className; the build fails
+when a subscription family has no mapping entry instead of silently dropping the vendor mark; the design spec's "nothing is grey" is scoped to fills and edges.
+
+Third review 2026-09-08: the family-vendor invariant moved to `src/data/schema.ts` as
+`assertFamilyVendors` (ADR 0004), which also rejects a family whose entries span two vendors;
+the leaderboard test fixture no longer carries unused per-family entries; the trigger with picks
+carries an explicit label ("Subscriptions: Anthropic Max 5x, OpenAI Plus"), since a hidden
+separator in name-from-content gets space-padded; `formatUsdPerMonth` prints the published
+price without rounding; the design spec's scale line names the discount figure's 15px.

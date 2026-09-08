@@ -4,7 +4,7 @@
 // a healthy refresh never turns tests red.
 
 import { z } from "zod";
-import type { DeepsweSnapshot, ModelMappingEntry } from "./types.ts";
+import type { DeepsweSnapshot, ModelMappingEntry, Tier } from "./types.ts";
 
 const priceRateSchema = z.object({ input: z.number(), cached: z.number(), output: z.number() });
 
@@ -88,6 +88,27 @@ export function assertMappingCoverage(
   }
   if (orphaned.length > 0) {
     parts.push(`mapping entries matching no snapshot model: ${orphaned.join(", ")}`);
+  }
+  if (parts.length > 0) {
+    throw new Error(parts.join("; "));
+  }
+}
+
+// The Subscriptions picker shows each family's vendor mark, read from the
+// family's mapping entries: a family with none, or with entries from two
+// vendors, would otherwise lose or mislabel its mark deep in createLeaderboard.
+export function assertFamilyVendors(tiers: Tier[], mapping: ModelMappingEntry[]): void {
+  const families = new Set(tiers.map((tier) => tier.family));
+  const parts: string[] = [];
+  for (const family of families) {
+    const vendors = new Set(
+      mapping.filter((entry) => entry.family === family).map((entry) => entry.vendor),
+    );
+    if (vendors.size === 0) {
+      parts.push(`no mapping entry has family "${family}"`);
+    } else if (vendors.size > 1) {
+      parts.push(`family "${family}" spans vendors ${[...vendors].join(", ")}`);
+    }
   }
   if (parts.length > 0) {
     throw new Error(parts.join("; "));

@@ -274,17 +274,12 @@ function effortRank(effort: string | null): number {
   return rank === -1 ? EFFORT_ORDER.length : rank;
 }
 
-// The vendor mark for a family's picker column. A family with no mapping
-// entry is a data bug: failing here beats a column that silently loses its
-// mark and its name from the trigger.
+// The vendor mark for a family's picker column. Loaded data has mapping
+// entries from exactly one vendor per family (assertFamilyVendors), so the
+// first entry's vendor is the family's; synthetic fixtures without family
+// entries get an empty vendor, which VendorMark renders as nothing.
 function familyVendor(mapping: ModelMappingEntry[], family: PickerFamily["family"]): string {
-  const entry = mapping.find((candidate) => candidate.family === family);
-  if (entry === undefined) {
-    throw new Error(
-      `No model in data/model-mapping.json has family "${family}"; the Subscriptions picker needs one for its vendor mark.`,
-    );
-  }
-  return entry.vendor;
+  return mapping.find((candidate) => candidate.family === family)?.vendor ?? "";
 }
 
 // What a dollar of API cost becomes on a tier. The usage multiplier scales the

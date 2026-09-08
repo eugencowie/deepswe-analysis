@@ -44,7 +44,7 @@ export function formatTierDiscount(discount: number): string {
   return `−${percent}%`;
 }
 
-// A tier's monthly price, whole dollars: "$20/mo".
+// A tier's monthly price as published: "$20/mo".
 export function formatUsdPerMonth(value: number): string {
-  return `$${Math.round(value)}/mo`;
+  return `$${value}/mo`;
 }

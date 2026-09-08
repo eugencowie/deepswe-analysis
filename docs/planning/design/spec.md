@@ -26,7 +26,7 @@ record specific visual changes.
   hierarchy through size, weight and contrast, keeping secondary details
   readable without competing with the results. The type scale is 11px
   (header qualifiers such as "est"), 12px (provenance, effort levels),
-  13px, 14px (table body and controls), 15px (the masthead sentence) and
+  13px, 14px (table body and controls), 15px (the masthead sentence, the route card's discount figure) and
   28px (the title).
 
 ## Layout and themes
