@@ -185,7 +185,7 @@ describe("sort", () => {
   });
 
   test("orders each figure column by its own value", () => {
-    // Every column ranks the four rows differently, so a column that sorted
+    // Every column sorts the four rows differently, so a column that sorted
     // by another column's value would produce the wrong order.
     const figures = [
       row({

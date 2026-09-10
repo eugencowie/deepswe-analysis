@@ -5,7 +5,7 @@ Status: resolved
 
 ## What to build
 
-One module, `src/components/leaderboard-columns.tsx`, that owns every leaderboard column: header, tooltip, estimate marker, alignment, derived tint, bar, cell, sort value, blank policy and first sort direction. It also owns the sort rule: the default sort, the two-state toggle, and blank-last ordering in both directions. The table renders whatever the list contains and keeps only sort state.
+One module, `src/components/leaderboard-columns.tsx`, that owns every leaderboard column: header, tooltip, estimate marker, alignment, derived tint, bar, cell, sort value, blank policy and first sort direction. It also owns the sort rule: the default sort, the two-state toggle, and blanks last in both directions. The table renders whatever the list contains and keeps only sort state.
 
 Closes the debt ADR 0005 recorded as pending ("a column module that owns cells, formatting and comparators together") and the `compareModel` thread ticket 01 deferred.
 
@@ -24,4 +24,4 @@ Recommendation strength at review: Strong. Dependency category: in-process.
 
 ## Answer
 
-Built in commit `4a0f3e0`. `createColumns({ compareModel })` returns `columns`, `defaultSort`, `toggleSort`, `sortRows`; the table takes `rows`, `columns`, `empty`. `leaderboard-sort.ts` deleted, `format.ts` trimmed to the route-card pair. 147 tests pass, e2e 11 pass.
+Built in commit `4a0f3e0`. `createColumns({ compareModel })` returns `columns`, `defaultSort`, `toggleSort`, `sortRows`; the table takes `rows`, `columns`, `empty`. `leaderboard-sort.ts` deleted, `format.ts` trimmed to the route-card pair. 148 tests pass, e2e 11 pass.

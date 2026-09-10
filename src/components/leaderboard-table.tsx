@@ -46,7 +46,7 @@ export function LeaderboardTable({
   // results for descending order, which would put blank cells first.
   const sortedRows = useMemo(() => columns.sortRows(rows, sort), [columns, rows, sort]);
 
-  const tableColumns = useMemo(
+  const tanstackColumns = useMemo(
     () =>
       helper.columns(
         columns.columns.map((column) =>
@@ -59,7 +59,7 @@ export function LeaderboardTable({
       ),
     [columns],
   );
-  const table = useTable({ features, columns: tableColumns, data: sortedRows });
+  const table = useTable({ features, columns: tanstackColumns, data: sortedRows });
 
   return (
     <Table>

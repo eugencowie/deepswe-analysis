@@ -92,14 +92,9 @@ export function createColumns({
       header: "Cost",
       value: (row) => row.effectiveCostUsd,
       cell: (row) =>
-        row.accessRoute === "api" ? (
-          formatUsd(row.effectiveCostUsd)
-        ) : (
-          <>
-            <s className="text-muted-foreground">{formatUsd(row.apiCostUsd)}</s>{" "}
-            {formatUsd(row.effectiveCostUsd)}
-          </>
-        ),
+        row.accessRoute === "api"
+          ? formatUsd(row.effectiveCostUsd)
+          : struckCost(row.apiCostUsd, row.effectiveCostUsd),
     }),
     numericColumn({
       id: "outTok",
@@ -121,14 +116,9 @@ export function createColumns({
       value: (row) => row.costPerSolvedTaskUsd,
       // Pass@1 = 0 blanks both values, rendering a single blank cell.
       cell: (row) =>
-        row.accessRoute === "api" || row.costPerSolvedTaskUsd === null ? (
-          formatUsd(row.costPerSolvedTaskUsd)
-        ) : (
-          <>
-            <s className="text-muted-foreground">{formatUsd(row.apiCostPerSolvedTaskUsd)}</s>{" "}
-            {formatUsd(row.costPerSolvedTaskUsd)}
-          </>
-        ),
+        row.accessRoute === "api" || row.costPerSolvedTaskUsd === null
+          ? formatUsd(row.costPerSolvedTaskUsd)
+          : struckCost(row.apiCostPerSolvedTaskUsd, row.costPerSolvedTaskUsd),
     }),
     numericColumn({
       id: "avgTime",
@@ -152,7 +142,7 @@ export function createColumns({
       cell: (row) => formatThroughput(row.throughputTokPerSec),
     }),
   ];
-  const spec = (columnId: ColumnId) => specs.find((s) => s.id === columnId) ?? specs[0];
+  const byId = Object.fromEntries(specs.map((s) => [s.id, s])) as Record<ColumnId, ColumnSpec>;
 
   return {
     columns: specs.map(({ firstDirection: _first, compare: _compare, ...column }) => column),
@@ -160,9 +150,9 @@ export function createColumns({
     toggleSort: (sort, columnId) =>
       sort.columnId === columnId
         ? { columnId, direction: sort.direction === "asc" ? "desc" : "asc" }
-        : { columnId, direction: spec(columnId).firstDirection },
+        : { columnId, direction: byId[columnId].firstDirection },
     sortRows: (rows, sort) => {
-      const { compare } = spec(sort.columnId);
+      const { compare } = byId[sort.columnId];
       return rows.toSorted((a, b) => compare(a, b, sort.direction));
     },
   };
@@ -172,15 +162,9 @@ function numericColumn({
   value,
   bar,
   ...spec
-}: {
-  id: ColumnId;
-  header: string;
-  tooltip?: string;
-  estimate?: true;
-  derived?: boolean;
+}: Omit<Column, "align" | "bar"> & {
   bar?: true; // draw the column's value as a bar; the value must be a 0..1 fraction
   value: (row: LeaderboardRow) => number | null;
-  cell: (row: LeaderboardRow) => ReactNode;
 }): ColumnSpec {
   return {
     ...spec,
@@ -231,6 +215,15 @@ function modelCell(row: LeaderboardRow): ReactNode {
           {row.accessTag.label}
         </Badge>
       )}
+    </>
+  );
+}
+
+// A tier row's cost: the API cost struck out beside the effective cost.
+function struckCost(apiUsd: number | null, effectiveUsd: number | null): ReactNode {
+  return (
+    <>
+      <s className="text-muted-foreground">{formatUsd(apiUsd)}</s> {formatUsd(effectiveUsd)}
     </>
   );
 }
