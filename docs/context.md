@@ -86,6 +86,14 @@ _Avoid_: official endpoint, default provider
 **Average time**:
 Output tokens ÷ throughput. Deliberately ignores latency, prompt processing, and tool-execution time.
 
+**Column**:
+One leaderboard column: its header, cell and sort behaviour, owned by the Column module (`src/components/leaderboard-columns.tsx`). Every column is either a source column or a derived column.
+_Avoid_: field, table column (as a name)
+
+**Sort**:
+One column and a direction; the table is always sorted. Clicking a sorted column flips its direction; clicking a fresh column starts it in its natural direction (Model ascending, figures descending). Blank cells sort last in both directions. Pass@1 descending by default. Changing a filter never resets the sort.
+_Avoid_: ordering, ranking
+
 **Source column**:
 A leaderboard column reported verbatim by the DeepSWE leaderboard (Pass@1, average cost, output tokens, steps).
 

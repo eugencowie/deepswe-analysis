@@ -1,7 +1,7 @@
 # 02: Deepen the column module
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 
 ## What to build
 
@@ -20,4 +20,8 @@ Recommendation strength at review: Strong. Dependency category: in-process.
 - `format.ts` keeps only `formatTierDiscount` and `formatUsdPerMonth` (route-card callers) and their tests, pending the Subscriptions picker deepening. The column formatters become private to the column module.
 - TanStack Table stays as the table's render wiring (ADR 0001); out of scope here.
 - Tests replace, not layer: `leaderboard-sort.test.ts` deleted; column formatter cases in `format.test.ts` replaced by cell-text tests at the column interface, using hand-written `LeaderboardRow` fixtures and `renderToStaticMarkup` with tags stripped. The e2e sort test stays: its remaining value is the `useState` wiring.
-- Glossary gains "Column" and "Sort"; recorded as ADR 0007.
+- Glossary gains "Column" and "Sort"; recorded as [ADR 0007](../../../architecture/0007-column-module-owns-cells-and-sort.md).
+
+## Answer
+
+Built in commit `df91aea`. `createColumns({ compareModel })` returns `columns`, `defaultSort`, `toggleSort`, `sortRows`; the table takes `rows`, `columns`, `empty`. `leaderboard-sort.ts` deleted, `format.ts` trimmed to the route-card pair. 147 tests pass, e2e 11 pass.

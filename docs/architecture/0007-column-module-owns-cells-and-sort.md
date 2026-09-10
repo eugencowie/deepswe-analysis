@@ -1,0 +1,19 @@
+# The Column module owns cells, formatting and the sort rule
+
+ADR 0005 left column formatting and sort "pending a column module". Until then a column was spread across four modules: header, tint and sort value in the table's `ColumnSpec`, blank-last ordering in `leaderboard-sort.ts`, cell text in `format.ts`, and the Model column's order arriving as a `compareModel` prop drilled from App through the table into every column's comparator as a fourth argument that seven of eight ignored. The formatters and the blank-last comparator were unit-tested; the ~40 facts wiring them to columns were not, so swapping one column's sort value for another's left every test green. We decided one module, `src/components/leaderboard-columns.tsx`, owns every column (header, tooltip, estimate marker, alignment, derived tint, bar, cell, sort value, blank policy, first direction) and the sort rule (Pass@1 descending by default; a sorted column flips, a fresh column starts in its natural direction; blanks last both ways). `createColumns({ compareModel })` binds the Leaderboard's Model order at construction and returns `columns`, `defaultSort`, `toggleSort` and `sortRows`; the table renders the list and keeps only `useState` for the sort.
+
+## Considered options
+
+- **A pure `src/data/columns.ts` with cells left in the table**: keeps JSX out of the module, but the struck-out API cost and the Model cell are most of the wiring that was untested; the seam would cut through the thing being deepened.
+- **Rows carry the Model sort key so comparators stay three-argument**: already rejected by ADR 0005; widens the row with a fact that belongs to presentation.
+- **The Leaderboard grows a `columns` field**: puts presentation in the data module, contrary to ADR 0005's split.
+- **Sort transitions as module-level exports taking the column list**: would expose `firstDirection` and `compare` on the public column type; binding them to the instance keeps those private.
+
+## Consequences
+
+- `firstDirection`, `value` and `compare` are not part of the interface; tests exercise them through `sortRows` and `toggleSort` on hand-written rows.
+- Cells are tested by rendering to static markup with `react-dom/server` and stripping tags, so no DOM is needed in `vp test`. The test for the struck-out cost asserts on the `<s>` element, everything else on text.
+- `leaderboard-sort.ts` and six single-use formatters are gone. `format.ts` keeps `formatTierDiscount` and `formatUsdPerMonth` for the route card until the Subscriptions picker is deepened.
+- TanStack Table stays as the table's render wiring (ADR 0001). Here it is a pass-through; dropping it is a separate decision.
+- The table's interface is `rows`, `columns`, `empty`. Class strings, including the left rule on the first derived column, remain the table's business.
+- The e2e "sort survives a filter change" test stays: after this change its remaining value is the table's `useState` wiring.
