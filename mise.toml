@@ -1,3 +1,6 @@
+[settings]
+disable_backends = ["asdf"] # cannot be updated by Renovate
+
 [plugins]
 vite-plus = "https://github.com/markmals/mise-vite-plus"
 
