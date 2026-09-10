@@ -86,6 +86,14 @@ _Avoid_: official endpoint, default provider
 **Average time**:
 Output tokens ÷ throughput. Deliberately ignores latency, prompt processing, and tool-execution time.
 
+**Column**:
+One column of the leaderboard, with its header, cell and sort order. Every column is either a source column or a derived column.
+_Avoid_: field, table column (as a name)
+
+**Sort**:
+The column the leaderboard is ordered by and its direction; there is always exactly one, and filters never change it. Blank cells go last whichever the direction.
+_Avoid_: ordering, ranking
+
 **Source column**:
 A leaderboard column reported verbatim by the DeepSWE leaderboard (Pass@1, average cost, output tokens, steps).
 

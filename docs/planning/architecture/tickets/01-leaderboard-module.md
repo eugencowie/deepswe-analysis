@@ -22,4 +22,4 @@ Recommendation strength at review: Strong. Dependency category: in-process.
 
 ## Answer
 
-Built in commit `42409e5` and the review follow-up on this branch. Review findings deferred to ticket 04: the fourth `compareModel` argument threaded through every `ColumnSpec.compare`.
+Built in commit `42409e5` and the review follow-up on this branch. Review findings deferred to ticket 02: the fourth `compareModel` argument threaded through every `ColumnSpec.compare`.

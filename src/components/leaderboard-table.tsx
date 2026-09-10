@@ -2,7 +2,6 @@ import { useMemo, useState, type ReactNode } from "react";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -13,275 +12,74 @@ import {
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/components/ui/utils";
-import { VendorMark } from "@/components/vendor-mark";
-import {
-  formatDuration,
-  formatInteger,
-  formatPassAt1,
-  formatThroughput,
-  formatTokens,
-  formatUsd,
-} from "@/data/format";
-import { compareBlankLast, type SortDirection } from "@/components/leaderboard-sort";
+import type { Column, LeaderboardColumns } from "@/components/leaderboard-columns";
 import type { LeaderboardRow } from "@/data/leaderboard";
 
-type CompareModel = (a: LeaderboardRow, b: LeaderboardRow) => number;
-
-type ColumnId =
-  | "model"
-  | "passAt1"
-  | "avgCost"
-  | "costPerf"
-  | "outTok"
-  | "steps"
-  | "avgTime"
-  | "tokPerSec";
-
-// Everything a column needs lives in one spec: adding a column means adding
-// one entry here, nothing else.
-type ColumnSpec = {
-  id: ColumnId;
-  header: string;
-  tooltip?: string;
-  // Figures are estimates rather than measurements: the header carries a
-  // small muted "est" and the tooltip says what is left out.
-  estimate?: true;
-  align: "left" | "right";
-  firstDirection: SortDirection;
-  // Derived columns are computed by this project rather than reported by the
-  // DeepSWE leaderboard: an enhancement, so they carry the brand tint and a
-  // rule sets them apart from the source columns. The tint is fainter than
-  // the Subscriptions trigger's because it covers a large area.
-  derived?: boolean;
-  // A 0..1 fraction drawn as a bar behind the cell, so the column's order
-  // reads at a glance. Pass@1 only: it is the one column on a fixed scale.
-  bar?: (row: LeaderboardRow) => number | null;
-  cell: (row: LeaderboardRow) => ReactNode;
-  compare: (
-    a: LeaderboardRow,
-    b: LeaderboardRow,
-    direction: SortDirection,
-    compareModel: CompareModel,
-  ) => number;
-};
-
-function numericColumn({
-  value,
-  bar,
-  ...spec
-}: {
-  id: ColumnId;
-  header: string;
-  tooltip?: string;
-  estimate?: true;
-  derived?: boolean;
-  bar?: true; // draw the column's value as a bar; the value must be a 0..1 fraction
-  value: (row: LeaderboardRow) => number | null;
-  cell: (row: LeaderboardRow) => ReactNode;
-}): ColumnSpec {
-  return {
-    ...spec,
-    bar: bar ? value : undefined,
-    align: "right",
-    firstDirection: "desc",
-    compare: (a, b, direction) => compareBlankLast(value(a), value(b), direction),
-  };
-}
-
 // Classes shared by a column's header and cells. Both are tinted and ruled
-// the same way so the two cannot drift apart.
-const columnClasses = (spec: ColumnSpec, index: number) =>
-  cn(
-    spec.align === "right" && "text-right",
-    spec.derived && "bg-brand/5 dark:bg-brand/8",
-    derivedBoundary(index) && "border-l border-brand/30",
+// the same way so the two cannot drift apart. The tint is fainter than the
+// Subscriptions trigger's because it covers a large area.
+const columnClasses = (columns: Column[], index: number) => {
+  const column = columns[index];
+  const derivedBoundary = column.derived === true && columns[index - 1]?.derived !== true;
+  return cn(
+    column.align === "right" && "text-right",
+    column.derived && "bg-brand/5 dark:bg-brand/8",
+    derivedBoundary && "border-l border-brand/30",
   );
-
-// Access tags are colour-coded by subscription family.
-const tagClassByFamily = {
-  claude: "border-amber-600 text-amber-600 dark:border-amber-400 dark:text-amber-400",
-  chatgpt: "border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-400",
 };
-
-const columnSpecs: ColumnSpec[] = [
-  {
-    id: "model",
-    header: "Model",
-    align: "left",
-    firstDirection: "asc",
-    compare: (a, b, direction, compareModel) =>
-      direction === "asc" ? compareModel(a, b) : compareModel(b, a),
-    cell: (row) => {
-      // The display name mirrors DeepSWE and omits the model revision; the
-      // tooltip exposes the pinned OpenRouter id for readers cross-checking
-      // model cards (ADR 0002).
-      return (
-        <>
-          <VendorMark vendor={row.vendor} className="mr-1.5" />
-          {row.openrouterId === null ? (
-            row.displayName
-          ) : (
-            <Tooltip>
-              <TooltipTrigger render={<span />}>{row.displayName}</TooltipTrigger>
-              <TooltipContent>{row.openrouterId}</TooltipContent>
-            </Tooltip>
-          )}
-          {row.effort !== null && (
-            // A real space, so copied text and the accessible name stay readable.
-            <>
-              {" "}
-              <span className="ml-1 text-xs text-muted-foreground">{row.effort}</span>
-            </>
-          )}
-          {row.accessTag && (
-            <Badge variant="outline" className={cn("ml-2", tagClassByFamily[row.accessTag.family])}>
-              {row.accessTag.label}
-            </Badge>
-          )}
-        </>
-      );
-    },
-  },
-  numericColumn({
-    id: "passAt1",
-    header: "Pass@1",
-    bar: true,
-    value: (row) => row.passAt1,
-    cell: (row) => formatPassAt1(row.passAt1),
-  }),
-  numericColumn({
-    id: "avgCost",
-    header: "Cost",
-    value: (row) => row.effectiveCostUsd,
-    cell: (row) =>
-      row.accessRoute === "api" ? (
-        formatUsd(row.effectiveCostUsd)
-      ) : (
-        <>
-          <s className="text-muted-foreground">{formatUsd(row.apiCostUsd)}</s>{" "}
-          {formatUsd(row.effectiveCostUsd)}
-        </>
-      ),
-  }),
-  numericColumn({
-    id: "outTok",
-    header: "Tokens",
-    value: (row) => row.outputTokens,
-    cell: (row) => formatTokens(row.outputTokens),
-  }),
-  numericColumn({
-    id: "steps",
-    header: "Steps",
-    value: (row) => row.steps,
-    cell: (row) => formatInteger(row.steps),
-  }),
-  numericColumn({
-    id: "costPerf",
-    header: "Cost/perf",
-    tooltip: "Cost ÷ Pass@1: what you pay per task actually solved",
-    derived: true,
-    value: (row) => row.costPerSolvedTaskUsd,
-    // Pass@1 = 0 blanks both values, rendering a single blank cell.
-    cell: (row) =>
-      row.accessRoute === "api" || row.costPerSolvedTaskUsd === null ? (
-        formatUsd(row.costPerSolvedTaskUsd)
-      ) : (
-        <>
-          <s className="text-muted-foreground">{formatUsd(row.apiCostPerSolvedTaskUsd)}</s>{" "}
-          {formatUsd(row.costPerSolvedTaskUsd)}
-        </>
-      ),
-  }),
-  numericColumn({
-    id: "avgTime",
-    header: "Time",
-    estimate: true,
-    tooltip:
-      "Output tokens ÷ vendor API throughput; excludes tool execution and gaps between the agent's calls",
-    derived: true,
-    value: (row) => row.averageTimeSeconds,
-    cell: (row) => formatDuration(row.averageTimeSeconds),
-  }),
-  numericColumn({
-    id: "tokPerSec",
-    header: "Tok/s",
-    // A measurement (OpenRouter's p50), not an estimate: only Time, which is
-    // derived from it, carries "est".
-    tooltip:
-      "p50 throughput of the vendor's own consumer API (via OpenRouter stats). Not the speed measured in the benchmark run",
-    derived: true,
-    value: (row) => row.throughputTokPerSec,
-    cell: (row) => formatThroughput(row.throughputTokPerSec),
-  }),
-];
-
-const derivedBoundary = (index: number) =>
-  columnSpecs[index].derived === true && columnSpecs[index - 1]?.derived !== true;
 
 const features = tableFeatures({});
 const helper = createColumnHelper<typeof features, LeaderboardRow>();
 
-const columns = helper.columns(
-  columnSpecs.map((spec) =>
-    helper.display({
-      id: spec.id,
-      header: spec.header,
-      cell: ({ row }) => spec.cell(row.original),
-    }),
-  ),
-);
-
 export function LeaderboardTable({
   rows,
-  compareModel,
+  columns,
   empty,
 }: {
   rows: LeaderboardRow[];
-  compareModel: CompareModel;
+  columns: LeaderboardColumns;
   empty?: ReactNode;
 }) {
-  const [sort, setSort] = useState<{ columnId: ColumnId; direction: SortDirection }>({
-    columnId: "passAt1",
-    direction: "desc",
-  });
+  const [sort, setSort] = useState(columns.defaultSort);
 
   // Sorting lives outside TanStack: its sorted row model reverses comparator
-  // results for descending order, which would put blank cells first. The spec
-  // comparators receive the direction instead, so blanks sort last both ways.
-  const sortedRows = useMemo(() => {
-    const spec = columnSpecs.find((s) => s.id === sort.columnId) ?? columnSpecs[0];
-    return rows.toSorted((a, b) => spec.compare(a, b, sort.direction, compareModel));
-  }, [rows, sort, compareModel]);
+  // results for descending order, which would put blank cells first.
+  const sortedRows = useMemo(() => columns.sortRows(rows, sort), [columns, rows, sort]);
 
-  const table = useTable({ features, columns, data: sortedRows });
-
-  // Two-state toggle: a sorted column flips direction, a fresh column starts
-  // in its natural direction. There is no unsorted state.
-  const toggleSort = (spec: ColumnSpec) => {
-    setSort((current) =>
-      current.columnId === spec.id
-        ? { columnId: spec.id, direction: current.direction === "asc" ? "desc" : "asc" }
-        : { columnId: spec.id, direction: spec.firstDirection },
-    );
-  };
+  const tanstackColumns = useMemo(
+    () =>
+      helper.columns(
+        columns.columns.map((column) =>
+          helper.display({
+            id: column.id,
+            header: column.header,
+            cell: ({ row }) => column.cell(row.original),
+          }),
+        ),
+      ),
+    [columns],
+  );
+  const table = useTable({ features, columns: tanstackColumns, data: sortedRows });
 
   return (
     <Table>
       <TableHeader>
         {table.getHeaderGroups().map((group) => (
           <TableRow key={group.id} className="text-muted-foreground">
-            {/* Column order never changes, so headers zip with specs by index. */}
+            {/* Column order never changes, so headers zip with columns by index. */}
             {group.headers.map((header, index) => {
-              const spec = columnSpecs[index];
-              const isSorted = sort.columnId === spec.id;
+              const column = columns.columns[index];
+              const isSorted = sort.columnId === column.id;
               const label = (
                 <>
                   <span
-                    className={cn(spec.tooltip && "underline decoration-dotted underline-offset-4")}
+                    className={cn(
+                      column.tooltip && "underline decoration-dotted underline-offset-4",
+                    )}
                   >
                     <table.FlexRender header={header} />
                   </span>
-                  {spec.estimate && (
+                  {column.estimate && (
                     <span className="ml-1 text-[11px] font-normal text-muted-foreground/80">
                       est
                     </span>
@@ -294,20 +92,20 @@ export function LeaderboardTable({
                   aria-sort={
                     isSorted ? (sort.direction === "asc" ? "ascending" : "descending") : undefined
                   }
-                  className={cn(columnClasses(spec, index), spec.bar && "w-40")}
+                  className={cn(columnClasses(columns.columns, index), column.bar && "w-40")}
                 >
                   <button
                     type="button"
-                    onClick={() => toggleSort(spec)}
+                    onClick={() => setSort((current) => columns.toggleSort(current, column.id))}
                     className={cn(
                       "inline-flex cursor-pointer items-center gap-1 font-medium",
                       isSorted && "text-foreground",
                     )}
                   >
-                    {spec.tooltip ? (
+                    {column.tooltip ? (
                       <Tooltip>
                         <TooltipTrigger render={<span />}>{label}</TooltipTrigger>
-                        <TooltipContent>{spec.tooltip}</TooltipContent>
+                        <TooltipContent>{column.tooltip}</TooltipContent>
                       </Tooltip>
                     ) : (
                       label
@@ -329,7 +127,7 @@ export function LeaderboardTable({
         {rows.length === 0 && (
           <TableRow>
             <TableCell
-              colSpan={columnSpecs.length}
+              colSpan={columns.columns.length}
               className="py-8 text-center text-muted-foreground"
             >
               {empty}
@@ -339,15 +137,15 @@ export function LeaderboardTable({
         {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id}>
             {row.getAllCells().map((cell, index) => {
-              const spec = columnSpecs[index];
-              const bar = spec.bar?.(row.original) ?? null;
+              const column = columns.columns[index];
+              const bar = column.bar?.(row.original) ?? null;
               return (
                 <TableCell
                   key={cell.id}
                   className={cn(
                     "py-1.5",
-                    columnClasses(spec, index),
-                    spec.align === "right" && "tabular-nums",
+                    columnClasses(columns.columns, index),
+                    column.align === "right" && "tabular-nums",
                   )}
                 >
                   {bar === null ? (
