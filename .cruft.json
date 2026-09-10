@@ -1,7 +1,7 @@
 {
   "template": "https://github.com/eugencowie/templates",
-  "commit": "ae619b23952485fed0224aa944fbb808c2351021",
-  "checkout": "v1.5.9",
+  "commit": "1d3036dabeed02fb45765e00ab6d8d98c56447ee",
+  "checkout": "v1.5.11",
   "context": {
     "cookiecutter": {
       "project_slug": "deepswe-enhanced",
@@ -10,7 +10,7 @@
         ".github/workflows/renovate.yml"
       ],
       "_template": "https://github.com/eugencowie/templates",
-      "_commit": "ae619b23952485fed0224aa944fbb808c2351021"
+      "_commit": "1d3036dabeed02fb45765e00ab6d8d98c56447ee"
     }
   },
   "directory": "bare"
