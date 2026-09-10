@@ -24,4 +24,4 @@ Recommendation strength at review: Strong. Dependency category: in-process.
 
 ## Answer
 
-Built in commit `df91aea`. `createColumns({ compareModel })` returns `columns`, `defaultSort`, `toggleSort`, `sortRows`; the table takes `rows`, `columns`, `empty`. `leaderboard-sort.ts` deleted, `format.ts` trimmed to the route-card pair. 147 tests pass, e2e 11 pass.
+Built in commit `4a0f3e0`. `createColumns({ compareModel })` returns `columns`, `defaultSort`, `toggleSort`, `sortRows`; the table takes `rows`, `columns`, `empty`. `leaderboard-sort.ts` deleted, `format.ts` trimmed to the route-card pair. 147 tests pass, e2e 11 pass.

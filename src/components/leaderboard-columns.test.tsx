@@ -184,6 +184,67 @@ describe("sort", () => {
     ]);
   });
 
+  test("orders each figure column by its own value", () => {
+    // Every column ranks the four rows differently, so a column that sorted
+    // by another column's value would produce the wrong order.
+    const figures = [
+      row({
+        displayName: "a",
+        passAt1: 0.9,
+        effectiveCostUsd: 1,
+        outputTokens: 2000,
+        steps: 30,
+        costPerSolvedTaskUsd: 40,
+        averageTimeSeconds: 400,
+        throughputTokPerSec: 10,
+      }),
+      row({
+        displayName: "b",
+        passAt1: 0.7,
+        effectiveCostUsd: 3,
+        outputTokens: 4000,
+        steps: 10,
+        costPerSolvedTaskUsd: 20,
+        averageTimeSeconds: 200,
+        throughputTokPerSec: 30,
+      }),
+      row({
+        displayName: "c",
+        passAt1: 0.5,
+        effectiveCostUsd: 2,
+        outputTokens: 1000,
+        steps: 40,
+        costPerSolvedTaskUsd: 30,
+        averageTimeSeconds: 100,
+        throughputTokPerSec: 40,
+      }),
+      row({
+        displayName: "d",
+        passAt1: 0.3,
+        effectiveCostUsd: 4,
+        outputTokens: 3000,
+        steps: 20,
+        costPerSolvedTaskUsd: 10,
+        averageTimeSeconds: 300,
+        throughputTokPerSec: 20,
+      }),
+    ];
+    const expected: Record<Exclude<ColumnId, "model">, string[]> = {
+      passAt1: ["a", "b", "c", "d"],
+      avgCost: ["d", "b", "c", "a"],
+      outTok: ["b", "d", "a", "c"],
+      steps: ["c", "a", "d", "b"],
+      costPerf: ["a", "c", "b", "d"],
+      avgTime: ["a", "d", "b", "c"],
+      tokPerSec: ["c", "b", "d", "a"],
+    };
+    for (const [columnId, order] of Object.entries(expected) as [ColumnId, string[]][]) {
+      expect(names(columns.sortRows(figures, { columnId, direction: "desc" })), columnId).toEqual(
+        order,
+      );
+    }
+  });
+
   test("does not mutate its input", () => {
     const before = names(rows);
     columns.sortRows(rows, { columnId: "model", direction: "asc" });
