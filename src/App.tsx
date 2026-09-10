@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import { createColumns } from "@/components/leaderboard-columns";
 import { LeaderboardTable } from "@/components/leaderboard-table";
 import { LeaderboardToolbar } from "@/components/leaderboard-toolbar";
 import { ModeToggle } from "@/components/ui/mode-toggle";
@@ -18,6 +19,7 @@ const leaderboard = createLeaderboard({
   throughput: throughputSnapshot,
   tiers,
 });
+const columns = createColumns({ compareModel: leaderboard.compareModel });
 
 // The UTC date of a snapshot timestamp, robust to non-UTC offsets in a
 // future refresh (a plain slice would take the offset-local date).
@@ -79,7 +81,7 @@ function App() {
         />
         <LeaderboardTable
           rows={visibleRows}
-          compareModel={leaderboard.compareModel}
+          columns={columns}
           empty="No models selected. Use the Models menu to pick one or more."
         />
       </main>

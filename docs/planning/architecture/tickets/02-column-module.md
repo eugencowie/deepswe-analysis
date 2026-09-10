@@ -15,7 +15,7 @@ Recommendation strength at review: Strong. Dependency category: in-process.
 
 - Seam: one `.tsx` module beside the table. Cells are JSX; splitting text from decoration would put the seam through the thing being deepened.
 - Construction: `createColumns({ compareModel })` in App, mirroring `createLeaderboard`. The Model-column order is bound at construction, not threaded as a fourth comparator argument and not carried on rows (ADR 0005). The table's interface becomes `rows`, `columns`, `empty`.
-- Sort transitions are pure exports: `defaultSort()`, `toggleSort(sort, columnId)`, `sortRows(rows, columns, sort)`. The table keeps `useState`. `firstDirection`, `value` and `compare` are not visible outside the module.
+- Sort transitions are pure and bound to the instance, like the Leaderboard's `visibleRows`: `defaultSort()`, `toggleSort(sort, columnId)`, `sortRows(rows, sort)`. The table keeps `useState`. `firstDirection`, `value` and `compare` are not visible outside the module.
 - The table reads render flags (`header`, `tooltip`, `estimate`, `align`, `derived`, `bar`, `cell`) and maps them to classes itself, including the left rule on the first derived column.
 - `format.ts` keeps only `formatTierDiscount` and `formatUsdPerMonth` (route-card callers) and their tests, pending the Subscriptions picker deepening. The column formatters become private to the column module.
 - TanStack Table stays as the table's render wiring (ADR 0001); out of scope here.
