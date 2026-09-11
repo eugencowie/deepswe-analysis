@@ -4,9 +4,7 @@
 // environment; changes land only through human-reviewed commits. Fails
 // without writing anything when a guard rail trips.
 
-import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
-import { appendFile, readFile, writeFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import {
@@ -22,6 +20,13 @@ import {
   retryAfterMs,
   summarizeRefresh,
 } from "./openrouter-snapshot.ts";
+import {
+  publishSummary,
+  readDataFile,
+  readExistingSnapshot,
+  warn,
+  writeDataFile,
+} from "./refresh-io.ts";
 
 const envPath = fileURLToPath(new URL("../.env", import.meta.url));
 if (existsSync(envPath)) process.loadEnvFile(envPath);
@@ -33,6 +38,8 @@ if (!apiKey) {
   );
 }
 
+// Its own loop rather than fetchJson: the 429 and 404 branches read the
+// response before any parse.
 const maxAttempts = 3;
 async function fetchEndpoints(modelId: string): Promise<OpenrouterEndpoint[]> {
   for (let attempt = 1; ; attempt += 1) {
@@ -41,9 +48,7 @@ async function fetchEndpoints(modelId: string): Promise<OpenrouterEndpoint[]> {
     });
     if (response.status === 429 && attempt < maxAttempts) {
       const waitMs = retryAfterMs(response.headers.get("retry-after"));
-      console.warn(
-        `warning: 429 for ${modelId}; waiting ${waitMs / 1000}s (attempt ${attempt}/${maxAttempts}).`,
-      );
+      warn(`429 for ${modelId}; waiting ${waitMs / 1000}s (attempt ${attempt}/${maxAttempts}).`);
       await sleep(waitMs);
       continue;
     }
@@ -60,12 +65,8 @@ async function fetchEndpoints(modelId: string): Promise<OpenrouterEndpoint[]> {
   }
 }
 
-const mapping = modelMappingSchema.parse(
-  JSON.parse(await readFile(new URL("../data/model-mapping.json", import.meta.url), "utf8")),
-);
-const vendorMapping = vendorMappingSchema.parse(
-  JSON.parse(await readFile(new URL("../data/vendor-mapping.json", import.meta.url), "utf8")),
-);
+const mapping = await readDataFile("model-mapping.json", modelMappingSchema);
+const vendorMapping = await readDataFile("vendor-mapping.json", vendorMappingSchema);
 
 // One capture window: all models sequentially under a single timestamp, so
 // cross-model comparisons are same-moment (spec: never compare values fetched
@@ -77,25 +78,7 @@ for (const entry of mapping) {
   endpointsByModel.set(entry.openrouterId, await fetchEndpoints(entry.openrouterId));
 }
 
-// A missing snapshot is a legitimate first run; a corrupt one is a repo
-// problem that would silently disable the disappearance audit (ADR 0002), so
-// it hard-errors like any other mismatch.
-const snapshotPath = new URL("../data/openrouter-throughput.json", import.meta.url);
-const existing = await readFile(snapshotPath, "utf8").then(
-  (text) => {
-    try {
-      return throughputSnapshotSchema.parse(JSON.parse(text));
-    } catch (error) {
-      throw new Error(
-        `data/openrouter-throughput.json is not a valid throughput snapshot — fix or delete it. (${String(error)})`,
-      );
-    }
-  },
-  (error: NodeJS.ErrnoException) => {
-    if (error.code === "ENOENT") return null;
-    throw error;
-  },
-);
+const existing = await readExistingSnapshot("openrouter-throughput.json", throughputSnapshotSchema);
 
 const { snapshot, warnings } = buildSnapshot(
   mapping,
@@ -104,24 +87,12 @@ const { snapshot, warnings } = buildSnapshot(
   existing,
   capturedAt,
 );
-for (const warning of warnings) {
-  console.warn(`warning: ${warning}`);
-}
+warnings.forEach(warn);
 
-// Validated against the file schema before writing, so the refresh can never
-// commit a snapshot the app rejects at load. The built object is what gets
-// written: the parse returns a copy in schema key order.
-throughputSnapshotSchema.parse(snapshot);
-await writeFile(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
+await writeDataFile("openrouter-throughput.json", throughputSnapshotSchema, snapshot);
 console.log(
   `Wrote data/openrouter-throughput.json: ${Object.keys(snapshot.models).length} models, ` +
     `captured at ${capturedAt}.`,
 );
 
-const summary = summarizeRefresh(existing, snapshot, warnings);
-if (process.env.GITHUB_OUTPUT) {
-  // Unique delimiter per GitHub's guidance: the summary splices in
-  // upstream-derived text, which must not be able to terminate the heredoc.
-  const delimiter = `SUMMARY_${randomUUID()}`;
-  await appendFile(process.env.GITHUB_OUTPUT, `summary<<${delimiter}\n${summary}\n${delimiter}\n`);
-}
+await publishSummary(summarizeRefresh(existing, snapshot, warnings));
