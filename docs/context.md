@@ -47,7 +47,7 @@ The Subscriptions picker's popover: one column per subscription family, each a l
 _Avoid_: plan card, plan picker
 
 **Subscription family**:
-Which vendor's tiers can run a model: ChatGPT, Claude, or none.
+Which vendor's tiers can run a model: ChatGPT, Claude, or none. Every family has exactly one vendor, read from its model-mapping entries; that vendor's mark labels the family's column in the Subscriptions picker.
 
 **Equivalent API spend**:
 SemiAnalysis's approximation of the monthly API-priced usage a tier allows.

@@ -1,6 +1,7 @@
 // The Leaderboard: every entry combined with every access route its family
 // allows, plus the questions the toolbar and table ask of it. Built once from
-// the four snapshots; tests build it from fixtures through the same interface.
+// the loaded data files; tests build it from fixtures through the same
+// interface.
 
 import {
   type DeepsweEntry,
@@ -20,7 +21,7 @@ import {
 export type AccessRoute = "api" | TierId;
 
 // The marker on a tier row naming its tier; API rows are untagged.
-export type AccessTag = { label: string; family: Exclude<SubscriptionFamily, "none"> };
+export type AccessTag = { label: string; family: PickerFamilyId };
 
 // API and effective figures in USD for the same cost measure.
 export type CostPair = { api: number; effective: number };
@@ -64,7 +65,7 @@ export type PickerTier = {
 
 export type PickerFamily = {
   family: PickerFamilyId;
-  vendor: string; // the family's vendor mark
+  vendor: string; // the family's vendor; VendorMark renders its mark
   tiers: PickerTier[];
 };
 

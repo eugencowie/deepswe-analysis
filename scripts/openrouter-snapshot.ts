@@ -72,14 +72,16 @@ const serviceTierPattern = /\/(?:flex|priority)$/i;
 // vendor mapping is checked over the whole model mapping in one pass, so a
 // vendor someone forgot to map fails the run here, distinct from a null slug
 // that records a vendor deliberately running no consumer endpoint.
-function resolveSlugs(
+type ResolvedEntry = { entry: ModelMappingEntry; slug: string | null };
+
+function resolveConsumerSlugs(
   mapping: ModelMappingEntry[],
   vendorMapping: VendorMappingEntry[],
-): { entry: ModelMappingEntry; slug: string | null }[] {
+): ResolvedEntry[] {
   const slugByVendor = new Map(
     vendorMapping.map((entry) => [entry.vendor, entry.consumerProviderSlug]),
   );
-  const resolved: { entry: ModelMappingEntry; slug: string | null }[] = [];
+  const resolved: ResolvedEntry[] = [];
   const unmappedVendors = new Set<string>();
   for (const entry of mapping) {
     const slug = slugByVendor.get(entry.vendor);
@@ -106,7 +108,7 @@ export function buildSnapshot(
   capturedAt: string,
 ): { snapshot: ThroughputSnapshot; warnings: string[] } {
   const warnings: string[] = [];
-  const resolved = resolveSlugs(mapping, vendorMapping);
+  const resolved = resolveConsumerSlugs(mapping, vendorMapping);
 
   const allEndpoints = [...endpointsByModel.values()].flat();
   if (allEndpoints.length > 0 && allEndpoints.every((e) => e.throughput_last_30m?.p50 == null)) {
