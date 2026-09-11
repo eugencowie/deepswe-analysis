@@ -9,8 +9,12 @@ import {
 import { cn } from "@/components/ui/utils";
 import { VendorMark } from "@/components/vendor-mark";
 import { formatTierDiscount, formatUsdPerMonth } from "@/data/format";
-import { setRoute, type LeaderboardFilters, type PickerFamily } from "@/data/leaderboard";
-import type { AccessRoute } from "@/data/types";
+import {
+  setRoute,
+  type AccessRoute,
+  type LeaderboardFilters,
+  type PickerFamily,
+} from "@/data/leaderboard";
 
 const familyLabels = { claude: "Claude", chatgpt: "ChatGPT" } as const;
 

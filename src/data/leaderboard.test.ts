@@ -8,10 +8,11 @@ import {
   setModels,
   setRoute,
   toggleModel,
+  type AccessRoute,
   type LeaderboardFilters,
   type LeaderboardRow,
 } from "./leaderboard.ts";
-import type { AccessRoute, ModelMappingEntry, ThroughputSnapshot } from "./types.ts";
+import type { ModelMappingEntry, ThroughputSnapshot } from "./schema.ts";
 
 // Value-asserting throughput tests use this fixture rather than the live
 // snapshot, so a data refresh never re-touches them; live-data tests below

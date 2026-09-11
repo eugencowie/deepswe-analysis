@@ -7,22 +7,17 @@ import {
   assertMappingCoverage,
   deepsweSnapshotSchema,
   modelMappingSchema,
+  throughputSnapshotSchema,
+  tiersSnapshotSchema,
 } from "./schema.ts";
-import type {
-  DeepsweSnapshot,
-  ModelMappingEntry,
-  ThroughputSnapshot,
-  Tier,
-  TiersSnapshot,
-} from "./types.ts";
 
-// The refresh-written files are schema-parsed at load (ADR 0004); the
-// hand-maintained ones stay plain casts.
-export const deepsweSnapshot: DeepsweSnapshot = deepsweSnapshotSchema.parse(rawSnapshot);
-export const modelMapping: ModelMappingEntry[] = modelMappingSchema.parse(rawMapping);
+// Every data file the app reads is schema-parsed at load (ADR 0004), so
+// malformed committed data fails here with an error naming the field.
+export const deepsweSnapshot = deepsweSnapshotSchema.parse(rawSnapshot);
+export const modelMapping = modelMappingSchema.parse(rawMapping);
 assertMappingCoverage(deepsweSnapshot, modelMapping);
 
-export const throughputSnapshot: ThroughputSnapshot = rawThroughput as ThroughputSnapshot;
-export const tiersSnapshot: TiersSnapshot = rawTiers as TiersSnapshot;
-export const tiers: Tier[] = tiersSnapshot.tiers;
+export const throughputSnapshot = throughputSnapshotSchema.parse(rawThroughput);
+export const tiersSnapshot = tiersSnapshotSchema.parse(rawTiers);
+export const tiers = tiersSnapshot.tiers;
 assertFamilyVendors(tiers, modelMapping);

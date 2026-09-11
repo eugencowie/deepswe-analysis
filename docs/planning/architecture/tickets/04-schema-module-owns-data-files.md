@@ -1,7 +1,7 @@
 # 04: One schema module owns every checked-in data file
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: none (can start immediately)
 
 ## What to build
@@ -12,10 +12,27 @@ Move every file schema into a single module in the data layer, keep the field-le
 
 This is the prefactor for ticket 05.
 
+## Decisions (grilled 2026-09-11)
+
+- The module is `src/data/schema.ts`, as today; ADR 0004 already names it and the scripts already import from `src/data`. `types.ts` is deleted: tier ids, families and the version literals become `z.enum`/`z.literal` with inferred types, and `AccessRoute`, the only type no file carries, moves to `leaderboard.ts`.
+- The app parses the four files it imports. Price revisions and the vendor mapping have no app consumer, so the refresh shells parse them through the same module and a schema test parses all six committed files on every run. The original "app parses all six" criterion is replaced below.
+- Every file schema is a `strictObject` with uniform value constraints: non-empty identifier strings, non-negative money and token counts, `pass_at_1` in 0..1, `z.url()` on every `sourceUrl`. No timestamp format checks (the DeepSWE file carries microsecond precision with an offset; the others use `Z`). Current data passes.
+- A shared `provenance` object is extended into each file schema. The shared `priceRevisionSchema` lives in the module; the bundle-table schema in the script imports it. Upstream fetch schemas (version manifest, leaderboard artifact, OpenRouter endpoints and listings) stay in the scripts: they describe fetched data, not data files.
+- Existing-snapshot reads in both shells go through the schema instead of a cast, but the DeepSWE shell's "any read error means first run" catch-all is left for ticket 05, whose whole point is that policy.
+- Each shell parses the snapshot it built through the file schema before writing, so the refresh can never commit a file the app rejects.
+- Field comments stay as `//` comments beside schema fields, not `.describe()`.
+- Glossary gains "Data file"; the refresh-written/hand-maintained split is retired. No ADR: one sentence appended to ADR 0004 records that the schema module owns every data-file shape and the scripts import it.
+
 ## Acceptance criteria
 
-- [ ] One module exports a schema and an inferred type for each of the six data files; no hand-written duplicate of a file shape remains.
-- [ ] Neither refresh shell casts a JSON file; every read goes through a schema.
-- [ ] The app parses all six files at load, including the throughput snapshot and tiers.
+- [ ] One module exports a schema and an inferred type for each of the six data files; no hand-written duplicate of a file shape remains, and `types.ts` is gone.
+- [ ] Neither refresh shell casts a JSON file; every read goes through a schema, and each shell parses its output through the file schema before writing.
+- [ ] The app parses the four files it imports; a schema test parses all six committed data files.
 - [ ] The DeepSWE snapshot, mapping and price-revision schema tests still pass, and `vp check`, `vp test` and the e2e suite are green.
 - [ ] docs/context.md and any ADR that names the old type module are updated if they point at moved symbols.
+
+## Answer
+
+Built in one commit. `src/data/schema.ts` owns six strict file schemas with inferred types; `types.ts` is deleted and `AccessRoute` lives in `leaderboard.ts`. The app parses its four files in `sources.ts`; `schema.test.ts` parses all six committed files and pins strictness (unknown key, pass rate above 1, empty slug). Both shells parse every data file they read and validate the snapshot (and the grown mapping) against the schema before writing.
+
+One finding during the build: zod's parse returns a copy in schema key order, not file order. The shells therefore validate and then write the object the builder produced, and `hasMeaningfulChange` now compares with `isDeepStrictEqual` instead of serialised JSON, with a test pinning key-order insensitivity; without that, every DeepSWE refresh would have reported a change. Existing-snapshot error policy in the DeepSWE shell is untouched for ticket 05. `vp check` green, 155 tests pass, e2e 11 pass, build clean.

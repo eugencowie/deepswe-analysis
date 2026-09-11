@@ -1,15 +1,60 @@
 import { describe, expect, test } from "vite-plus/test";
 
+import rawSnapshot from "../../data/deepswe-v1.1.json" with { type: "json" };
+import rawMapping from "../../data/model-mapping.json" with { type: "json" };
+import rawThroughput from "../../data/openrouter-throughput.json" with { type: "json" };
+import rawPriceRevisions from "../../data/price-revisions.json" with { type: "json" };
+import rawTiers from "../../data/tiers.json" with { type: "json" };
+import rawVendorMapping from "../../data/vendor-mapping.json" with { type: "json" };
 import {
   assertFamilyVendors,
   assertMappingCoverage,
   deepsweSnapshotSchema,
   modelMappingSchema,
+  priceRevisionsFileSchema,
+  throughputSnapshotSchema,
+  tiersSnapshotSchema,
+  vendorMappingSchema,
 } from "./schema.ts";
 import { deepsweSnapshot, modelMapping, tiers } from "./sources.ts";
 
-// Importing sources.ts already parses the committed files, so the accepting
-// path is exercised by every test run; these pin the rejections (ADR 0004).
+// The app parses the four files it imports at load; the refresh shells parse
+// the other two. This is the one place every committed data file is parsed on
+// every run (architecture ticket 04).
+describe("every data file parses through its schema", () => {
+  test.each([
+    ["deepswe-v1.1.json", deepsweSnapshotSchema, rawSnapshot],
+    ["model-mapping.json", modelMappingSchema, rawMapping],
+    ["openrouter-throughput.json", throughputSnapshotSchema, rawThroughput],
+    ["price-revisions.json", priceRevisionsFileSchema, rawPriceRevisions],
+    ["tiers.json", tiersSnapshotSchema, rawTiers],
+    ["vendor-mapping.json", vendorMappingSchema, rawVendorMapping],
+  ])("%s", (_file, schema, raw) => {
+    expect(() => schema.parse(raw)).not.toThrow();
+  });
+});
+
+// Every file schema is strict with uniform value constraints: an unknown key
+// is drift or a typo, never something to strip silently.
+describe("file schemas are strict", () => {
+  test("rejects an unknown key on a tier", () => {
+    const tampered = { ...rawTiers, tiers: [{ ...rawTiers.tiers[0], colour: "orange" }] };
+    expect(() => tiersSnapshotSchema.parse(tampered)).toThrowError(/colour/);
+  });
+
+  test("rejects a pass rate above 1", () => {
+    const entry = { ...deepsweSnapshot.entries[0], effort: "tampered", pass_at_1: 1.5 };
+    const tampered = { ...deepsweSnapshot, entries: [...deepsweSnapshot.entries, entry] };
+    expect(() => deepsweSnapshotSchema.parse(tampered)).toThrowError(/pass_at_1/);
+  });
+
+  test("rejects an empty consumer provider slug", () => {
+    const tampered = [...rawVendorMapping, { vendor: "Ghost", consumerProviderSlug: "" }];
+    expect(() => vendorMappingSchema.parse(tampered)).toThrowError(/consumerProviderSlug/);
+  });
+});
+
+// The rejections below pin the load-time invariants (ADR 0004).
 
 describe("deepsweSnapshotSchema", () => {
   test("rejects a duplicate (model, effort) identity", () => {

@@ -3,29 +3,7 @@
 // resolution. The refresh shell does the fetching (ADR 0006).
 
 import { z } from "zod";
-import type { PriceRevision, TokenRates } from "../src/data/types.ts";
-
-// USD per million tokens, as the site's bundle states them.
-export const tokenRatesSchema: z.ZodType<TokenRates> = z.strictObject({
-  input: z.number().nonnegative(),
-  cached: z.number().nonnegative(),
-  output: z.number().nonnegative(),
-});
-
-export const priceRevisionSchema: z.ZodType<PriceRevision> = z.strictObject({
-  from: tokenRatesSchema,
-  to: tokenRatesSchema,
-});
-
-export type { PriceRevision, TokenRates };
-
-// data/price-revisions.json: the bundle's table resolved for the pinned
-// version, rewritten by the refresh shell whenever the site's differs.
-export const priceRevisionsFileSchema = z.object({
-  source: z.string().min(1),
-  sourceUrl: z.url(),
-  revisions: z.record(z.string().min(1), priceRevisionSchema),
-});
+import { type PriceRevision, type TokenRates, priceRevisionSchema } from "../src/data/schema.ts";
 
 // An entry's mean token counts; cached is the subset of input served from cache.
 export type TokenMix = { input: number; cached: number; output: number };

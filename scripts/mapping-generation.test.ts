@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import type { ModelMappingEntry } from "../src/data/types.ts";
+import type { ModelMappingEntry } from "../src/data/schema.ts";
 import {
   type OpenrouterListing,
   generateMappingEntries,

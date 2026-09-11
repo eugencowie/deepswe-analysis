@@ -3,7 +3,7 @@
 // review replaces hand-editing. Pure: the fetch lives in the refresh shell.
 
 import { z } from "zod";
-import type { ModelMappingEntry } from "../src/data/types.ts";
+import type { ModelMappingEntry } from "../src/data/schema.ts";
 
 export const openrouterModelsUrl = "https://openrouter.ai/api/v1/models";
 

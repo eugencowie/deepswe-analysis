@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 import rawPriceRevisions from "../data/price-revisions.json" with { type: "json" };
 import rawSnapshot from "../data/deepswe-v1.1.json" with { type: "json" };
-import type { ModelMappingEntry } from "../src/data/types.ts";
-import { type PriceRevision, priceRevisionsFileSchema } from "./deepswe-price-revisions.ts";
+import {
+  type ModelMappingEntry,
+  type PriceRevision,
+  priceRevisionsFileSchema,
+} from "../src/data/schema.ts";
 import {
   type LeaderboardArtifact,
   type VersionManifest,
@@ -269,6 +272,16 @@ describe("hasMeaningfulChange", () => {
     expect(hasMeaningfulChange(snapshotFrom(rows, "abc123"), snapshotFrom(rows, "abc123"))).toBe(
       false,
     );
+  });
+
+  it("ignores key order, which the file schema's parse does not preserve", () => {
+    const existing = snapshotFrom(rows, "abc123");
+    const next = snapshotFrom(rows, "abc123");
+    const reordered = {
+      ...next,
+      entries: next.entries.map(({ model, ...rest }) => ({ ...rest, model })),
+    };
+    expect(hasMeaningfulChange(existing, reordered)).toBe(false);
   });
 
   it("ignores a job-only change (name or finish time)", () => {
