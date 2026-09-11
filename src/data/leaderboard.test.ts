@@ -1,6 +1,12 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { deepsweSnapshot, modelMapping, throughputSnapshot, tiers } from "./sources.ts";
+import {
+  deepsweSnapshot,
+  familyVendors,
+  modelMapping,
+  throughputSnapshot,
+  tiers,
+} from "./sources.ts";
 import {
   compareModel,
   createLeaderboard,
@@ -32,6 +38,7 @@ const sources = {
   mapping: modelMapping,
   throughput: throughputSnapshot,
   tiers,
+  familyVendors,
 };
 const live = () => createLeaderboard(sources);
 
@@ -387,7 +394,7 @@ describe("pickerFamilies", () => {
 
   test("lists both families, Claude first, with their tiers in tiers.json order", () => {
     expect(pickerFamilies.map((f) => f.family)).toEqual(["claude", "chatgpt"]);
-    // The vendor mark for each column comes from the family's mapping entries.
+    // The vendor mark for each column is the family's vendor.
     expect(pickerFamilies.map((f) => f.vendor)).toEqual(["Anthropic", "OpenAI"]);
     expect(family("claude").tiers.map((tier) => tier.id)).toEqual([
       "claude-pro",

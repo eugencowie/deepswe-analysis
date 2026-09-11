@@ -1,13 +1,20 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { createLeaderboard } from "../src/data/leaderboard.ts";
-import { deepsweSnapshot, modelMapping, throughputSnapshot, tiers } from "../src/data/sources.ts";
+import {
+  deepsweSnapshot,
+  familyVendors,
+  modelMapping,
+  throughputSnapshot,
+  tiers,
+} from "../src/data/sources.ts";
 
 const modelCount = createLeaderboard({
   snapshot: deepsweSnapshot,
   mapping: modelMapping,
   throughput: throughputSnapshot,
   tiers,
+  familyVendors,
 }).modelOptions.length;
 
 const bodyRows = (page: Page) => page.getByRole("table").locator("tbody tr");

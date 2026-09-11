@@ -7,8 +7,8 @@ import rawPriceRevisions from "../../data/price-revisions.json" with { type: "js
 import rawTiers from "../../data/tiers.json" with { type: "json" };
 import rawVendorMapping from "../../data/vendor-mapping.json" with { type: "json" };
 import {
-  assertFamilyVendors,
   assertMappingCoverage,
+  familyVendors,
   deepsweSnapshotSchema,
   modelMappingSchema,
   priceRevisionsFileSchema,
@@ -16,7 +16,7 @@ import {
   tiersSnapshotSchema,
   vendorMappingSchema,
 } from "./schema.ts";
-import { deepsweSnapshot, modelMapping, tiers } from "./sources.ts";
+import { deepsweSnapshot, modelMapping } from "./sources.ts";
 
 // The app parses the four files it imports at load; the refresh shells parse
 // the other two. This is the one place every committed data file is parsed on
@@ -93,10 +93,14 @@ describe("assertMappingCoverage", () => {
   });
 });
 
-describe("assertFamilyVendors", () => {
-  test("rejects a tier family with no mapping entry", () => {
+describe("familyVendors", () => {
+  test("returns each picker family's one vendor, Claude first", () => {
+    expect(familyVendors(modelMapping)).toEqual({ claude: "Anthropic", chatgpt: "OpenAI" });
+  });
+
+  test("rejects a family with no mapping entry", () => {
     const mapping = modelMapping.filter((entry) => entry.family !== "chatgpt");
-    expect(() => assertFamilyVendors(tiers, mapping)).toThrowError(/"chatgpt"/);
+    expect(() => familyVendors(mapping)).toThrowError(/"chatgpt"/);
   });
 
   test("rejects a family whose entries span two vendors", () => {
@@ -106,6 +110,6 @@ describe("assertFamilyVendors", () => {
       ...modelMapping,
       { ...first, leaderboardModel: "ghost-model", vendor: "Ghost" },
     ];
-    expect(() => assertFamilyVendors(tiers, mapping)).toThrowError(/spans vendors.*Ghost/);
+    expect(() => familyVendors(mapping)).toThrowError(/spans vendors.*Ghost/);
   });
 });

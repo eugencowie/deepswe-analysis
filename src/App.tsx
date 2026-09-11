@@ -6,6 +6,7 @@ import { ModeToggle } from "@/components/ui/mode-toggle";
 import { createLeaderboard } from "@/data/leaderboard";
 import {
   deepsweSnapshot,
+  familyVendors,
   modelMapping,
   throughputSnapshot,
   tiers,
@@ -17,6 +18,7 @@ const leaderboard = createLeaderboard({
   mapping: modelMapping,
   throughput: throughputSnapshot,
   tiers,
+  familyVendors,
 });
 
 // The UTC date of a snapshot timestamp, robust to non-UTC offsets in a
