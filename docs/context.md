@@ -72,8 +72,11 @@ The cost a row is ranked by: the API cost as-is on API rows, multiplied by the s
 _Avoid_: subsidised cost, adjusted cost
 
 **Cost per solved task**:
-Effective cost ÷ Pass@1. The bang-for-buck number; lower is better.
+Effective cost ÷ Pass@1; undefined when Pass@1 is zero, even when cost is zero. The bang-for-buck number; lower is better.
 _Avoid_: bang for buck, value score
+
+**API cost per solved task**:
+API cost ÷ Pass@1; undefined when Pass@1 is zero, even when API cost is zero.
 
 **Throughput**:
 The p50 tokens-per-second of a model's consumer endpoint, as measured by OpenRouter. One number per model, shared across effort levels; blank when the model has no consumer endpoint.

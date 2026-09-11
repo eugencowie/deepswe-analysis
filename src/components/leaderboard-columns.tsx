@@ -17,7 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/components/ui/utils";
 import { VendorMark } from "@/components/vendor-mark";
-import { compareModel, type LeaderboardRow } from "@/data/leaderboard";
+import {
+  compareModel,
+  type AccessRoute,
+  type CostPair,
+  type LeaderboardRow,
+} from "@/data/leaderboard";
 
 // What the table reads to render a column beyond its header and cell.
 export type ColumnMeta = {
@@ -65,14 +70,11 @@ const columns = helper.columns([
     sortDescFirst: true,
     cell: figureCell(formatPassAt1),
   }),
-  helper.accessor("effectiveCostUsd", {
+  helper.accessor((row) => row.cost.effective, {
     id: "avgCost",
     header: "Cost",
     ...figure(),
-    cell: ({ row }) =>
-      row.original.accessRoute === "api"
-        ? formatUsd(row.original.effectiveCostUsd)
-        : struckCost(row.original.apiCostUsd, row.original.effectiveCostUsd),
+    cell: ({ row }) => costCell({ cost: row.original.cost, accessRoute: row.original.accessRoute }),
   }),
   helper.accessor("outputTokens", {
     id: "outTok",
@@ -86,18 +88,12 @@ const columns = helper.columns([
     ...figure(),
     cell: figureCell(formatInteger),
   }),
-  helper.accessor("costPerSolvedTaskUsd", {
+  helper.accessor((row) => row.costPerSolvedTask?.effective, {
     id: "costPerf",
     header: "Cost/perf",
     ...figure({ derived: true, tooltip: "Cost ÷ Pass@1: what you pay per task actually solved" }),
-    // Pass@1 = 0 blanks both values, rendering a single blank cell.
-    cell: ({ row, getValue }) => {
-      const value = getValue();
-      if (value === undefined) return BLANK;
-      return row.original.accessRoute === "api"
-        ? formatUsd(value)
-        : struckCost(row.original.apiCostPerSolvedTaskUsd, value);
-    },
+    cell: ({ row }) =>
+      costCell({ cost: row.original.costPerSolvedTask, accessRoute: row.original.accessRoute }),
   }),
   helper.accessor("averageTimeSeconds", {
     id: "avgTime",
@@ -175,12 +171,24 @@ function modelCell(row: LeaderboardRow): ReactNode {
   );
 }
 
+function costCell({
+  cost,
+  accessRoute,
+}: {
+  cost: CostPair | undefined;
+  accessRoute: AccessRoute;
+}): ReactNode {
+  if (cost === undefined) return BLANK;
+  return accessRoute === "api"
+    ? formatUsd(cost.effective)
+    : struckCost({ apiUsd: cost.api, effectiveUsd: cost.effective });
+}
+
 // A tier row's cost: the API cost struck out beside the effective cost.
-function struckCost(apiUsd: number | undefined, effectiveUsd: number): ReactNode {
+function struckCost({ apiUsd, effectiveUsd }: { apiUsd: number; effectiveUsd: number }): ReactNode {
   return (
     <>
-      <s className="text-muted-foreground">{blankOr(apiUsd, formatUsd)}</s>{" "}
-      {formatUsd(effectiveUsd)}
+      <s className="text-muted-foreground">{formatUsd(apiUsd)}</s> {formatUsd(effectiveUsd)}
     </>
   );
 }

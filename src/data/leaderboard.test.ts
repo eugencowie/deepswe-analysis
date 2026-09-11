@@ -145,7 +145,7 @@ describe("rows", () => {
     );
     expect(proRows.length).toBeGreaterThan(0);
     for (const row of proRows) {
-      expect(row.effectiveCostUsd).toBeCloseTo(sourceEntry(row).average_cost_usd * 0.05, 10);
+      expect(row.cost.effective).toBeCloseTo(sourceEntry(row).average_cost_usd * 0.05, 10);
     }
   });
 
@@ -156,7 +156,7 @@ describe("rows", () => {
     );
     expect(proRows.length).toBeGreaterThan(0);
     for (const row of proRows) {
-      expect(row.effectiveCostUsd).toBeCloseTo(sourceEntry(row).average_cost_usd * 0.1, 10);
+      expect(row.cost.effective).toBeCloseTo(sourceEntry(row).average_cost_usd * 0.1, 10);
     }
   });
 
@@ -167,14 +167,14 @@ describe("rows", () => {
       (r) =>
         r.model === "gpt-5-5" && r.effort === entry?.effort && r.accessRoute === "chatgpt-plus",
     );
-    expect(row?.effectiveCostUsd).toBeCloseTo(entry!.average_cost_usd * (20 / 700), 10);
+    expect(row?.cost.effective).toBeCloseTo(entry!.average_cost_usd * (20 / 700), 10);
   });
 
   test("tier rows carry the entry's API cost beside the effective cost", () => {
     const tierRows = rows.filter((row) => row.accessRoute !== "api");
     expect(tierRows.length).toBeGreaterThan(0);
     for (const row of tierRows) {
-      expect(row.apiCostUsd).toBe(sourceEntry(row).average_cost_usd);
+      expect(row.cost.api).toBe(sourceEntry(row).average_cost_usd);
     }
   });
 
@@ -182,8 +182,8 @@ describe("rows", () => {
     const apiRows = rows.filter((row) => row.accessRoute === "api");
     expect(apiRows.length).toBeGreaterThan(0);
     for (const row of apiRows) {
-      expect(row.apiCostUsd).toBe(row.effectiveCostUsd);
-      expect(row.apiCostPerSolvedTaskUsd).toBe(row.costPerSolvedTaskUsd);
+      expect(row.cost.api).toBe(row.cost.effective);
+      expect(row.costPerSolvedTask?.api).toBe(row.costPerSolvedTask?.effective);
     }
   });
 
@@ -194,7 +194,7 @@ describe("rows", () => {
     const api = rows.find(
       (r) => r.model === "claude-opus-5" && r.effort === "max" && r.accessRoute === "api",
     );
-    expect(tier?.apiCostPerSolvedTaskUsd).toBe(api?.costPerSolvedTaskUsd);
+    expect(tier?.costPerSolvedTask?.api).toBe(api?.costPerSolvedTask?.effective);
   });
 
   test("cost per solved task follows the row's effective cost", () => {
@@ -204,7 +204,10 @@ describe("rows", () => {
       (r) =>
         r.model === "claude-opus-5" && r.effort === api?.effort && r.accessRoute === "claude-pro",
     );
-    expect(tier?.costPerSolvedTaskUsd).toBeCloseTo(api!.costPerSolvedTaskUsd! * 0.05, 10);
+    expect(tier?.costPerSolvedTask?.effective).toBeCloseTo(
+      api!.costPerSolvedTask!.effective * 0.05,
+      10,
+    );
   });
 
   test("cost per solved task is blank when Pass@1 is 0", () => {
@@ -213,8 +216,7 @@ describe("rows", () => {
       entries: [{ ...deepsweSnapshot.entries[0], model: "claude-fable-5", pass_at_1: 0 }],
     };
     const [row] = createLeaderboard({ ...sources, snapshot, throughput: throughputFixture }).rows;
-    expect(row.costPerSolvedTaskUsd).toBeUndefined();
-    expect(row.apiCostPerSolvedTaskUsd).toBeUndefined();
+    expect(row.costPerSolvedTask).toBeUndefined();
   });
 
   test("rows carry mapping display names and families", () => {
@@ -243,8 +245,8 @@ describe("rows", () => {
       snapshot,
       mapping: mappingFixture(["adjusted"]),
     }).rows;
-    expect(row.effectiveCostUsd).toBe(1);
-    expect(row.apiCostUsd).toBe(1);
+    expect(row.cost.effective).toBe(1);
+    expect(row.cost.api).toBe(1);
   });
 
   test("each row states whether it is its model's best entry, the same on every route", () => {
@@ -620,10 +622,8 @@ describe("compareModel", () => {
     accessRoute: "api",
     isBestEntry: true,
     passAt1: 0.5,
-    effectiveCostUsd: 1,
-    costPerSolvedTaskUsd: 2,
-    apiCostUsd: 1,
-    apiCostPerSolvedTaskUsd: 2,
+    cost: { api: 1, effective: 1 },
+    costPerSolvedTask: { api: 2, effective: 2 },
     outputTokens: 100,
     steps: 10,
     openrouterId: "test/model",

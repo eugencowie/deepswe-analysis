@@ -19,6 +19,9 @@ export type AccessRoute = "api" | TierId;
 // The marker on a tier row naming its tier; API rows are untagged.
 export type AccessTag = { label: string; family: Exclude<SubscriptionFamily, "none"> };
 
+// API and effective figures in USD for the same cost measure.
+export type CostPair = { api: number; effective: number };
+
 // Absent facts are undefined, never null: the snapshot's nulls stop at
 // deriveRows, so a column's accessor value is either a figure or undefined,
 // which is what the table's blank-last sort keys on.
@@ -32,10 +35,8 @@ export type LeaderboardRow = {
   accessTag?: AccessTag; // absent on API rows
   isBestEntry: boolean; // the model's best entry (docs/context.md); the same on every route
   passAt1: number;
-  effectiveCostUsd: number;
-  costPerSolvedTaskUsd?: number; // absent when passAt1 is 0
-  apiCostUsd: number; // the entry's average cost at API pricing; equals effectiveCostUsd on API rows
-  apiCostPerSolvedTaskUsd?: number; // apiCostUsd ÷ passAt1; absent when passAt1 is 0
+  cost: CostPair;
+  costPerSolvedTask: CostPair | undefined; // absent when passAt1 is 0
   outputTokens: number;
   steps: number;
   openrouterId?: string; // shown in the model-name tooltip
@@ -194,10 +195,14 @@ function deriveRows(
       accessTag,
       isBestEntry,
       passAt1: entry.pass_at_1,
-      effectiveCostUsd,
-      costPerSolvedTaskUsd: costPerSolvedTask(effectiveCostUsd, entry.pass_at_1),
-      apiCostUsd: entry.average_cost_usd,
-      apiCostPerSolvedTaskUsd: costPerSolvedTask(entry.average_cost_usd, entry.pass_at_1),
+      cost: { api: entry.average_cost_usd, effective: effectiveCostUsd },
+      costPerSolvedTask:
+        entry.pass_at_1 === 0
+          ? undefined
+          : {
+              api: entry.average_cost_usd / entry.pass_at_1,
+              effective: effectiveCostUsd / entry.pass_at_1,
+            },
       outputTokens: entry.output_tokens,
       steps: entry.steps,
       openrouterId: mapped.openrouterId ?? undefined,
@@ -298,9 +303,4 @@ function subsidisationFactor(tier: Tier, usageMultiplier: number): number {
 // A subsidisation factor as the discount it amounts to.
 function tierDiscount(tier: Tier, usageMultiplier: number): number {
   return 1 - subsidisationFactor(tier, usageMultiplier);
-}
-
-function costPerSolvedTask(effectiveCostUsd: number, passAt1: number): number | undefined {
-  if (passAt1 === 0) return undefined;
-  return effectiveCostUsd / passAt1;
 }
