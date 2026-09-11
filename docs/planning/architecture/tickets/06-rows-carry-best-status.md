@@ -16,3 +16,12 @@ Best-view behaviour is unchanged: highest Pass@1 on the raw fraction, higher eff
 - [ ] The visible-rows filter is one predicate with no per-call intermediate state.
 - [ ] Existing visible-rows tests (tie-break, same entry per route, single default-effort entry) pass without weakening.
 - [ ] The e2e effort-toggle test passes unchanged; `vp check` and `vp test` are green.
+
+## Decisions (grilled 2026-09-11)
+
+- Field: `isBestEntry: boolean`, required on every row, named for the glossary term. Not a per-row `bestEffort` string compared against `row.effort`; that would bring back the undefined-against-undefined case.
+- Decided over snapshot entries inside `deriveRows`, before the per-route fan-out, so every route of an entry gets the same flag by construction. The comparator compares entries, not rows; a model missing from the best map cannot occur because the map is built from the entries being iterated.
+- The DeepSWE rule comment (highest raw Pass@1, higher effort on a tie, Fable 5 picks xhigh over max) lives once on the best-entry computation. The filter predicate carries no comment.
+- One new test under `rows` asserts the flag: exactly the expected effort's rows are flagged per model and every route of that entry agrees. `bestFixture` is hoisted so `rows` and `visibleRows` share it; the visibleRows tests stay untouched.
+- `filterRows` goes; the predicate is inlined into the `visibleRows` closure in `createLeaderboard`.
+- No ADR: easy to reverse and not surprising. The glossary already defines Best entry and needs no edit.
