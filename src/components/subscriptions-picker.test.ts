@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { formatTierDiscount, formatUsdPerMonth } from "./format.ts";
+import { formatTierDiscount, formatUsdPerMonth } from "./subscriptions-picker.tsx";
 
 describe("formatTierDiscount", () => {
   test("renders the discount as a negative percentage", () => {

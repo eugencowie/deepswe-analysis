@@ -1,14 +1,17 @@
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
+import { ChevronDown } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/components/ui/utils";
 import { VendorMark } from "@/components/vendor-mark";
-import { formatTierDiscount, formatUsdPerMonth } from "@/data/format";
 import {
   setRoute,
   type AccessRoute,
@@ -17,6 +20,83 @@ import {
 } from "@/data/leaderboard";
 
 const familyLabels = { claude: "Claude", chatgpt: "ChatGPT" } as const;
+
+// The rung formatters are exported for their unit tests only: the route card
+// is a portal, so it renders nothing with react-dom/server and the figures
+// can't be asserted on markup the way the column formatters are. The cost
+// is fast refresh for this file, which the lint rule below guards.
+
+// A tier discount (0.95 for 95% off) as a percentage: one decimal where
+// needed ("−95%", "−97.5%"), minus sign U+2212.
+// oxlint-disable-next-line react/only-export-components
+export function formatTierDiscount(discount: number): string {
+  const percent = Math.round(discount * 1000) / 10;
+  return `−${percent}%`;
+}
+
+// A tier's monthly price as published: "$20/mo".
+// oxlint-disable-next-line react/only-export-components
+export function formatUsdPerMonth(value: number): string {
+  return `$${value}/mo`;
+}
+
+// The Subscriptions picker: the brand-tinted trigger and its route card.
+// Brand-tinted because subscription pricing is the feature the site adds.
+export function SubscriptionsPicker({
+  filters,
+  onChange,
+  pickerFamilies,
+}: {
+  filters: LeaderboardFilters;
+  onChange: (filters: LeaderboardFilters) => void;
+  pickerFamilies: PickerFamily[];
+}) {
+  // The trigger surfaces only non-API picks: quiet on the default view, the
+  // chosen tiers at a glance otherwise (column order, Claude first).
+  const tierPicks = pickerFamilies.flatMap(({ family, vendor, tiers }) => {
+    const tier = tiers.find((t) => t.id === filters.subscriptions[family]);
+    return tier ? [{ family, vendor, tier }] : [];
+  });
+
+  return (
+    <DropdownMenu>
+      {/* The trigger reads "Subscriptions" while both families are on the
+          API, and otherwise shows only the tier picks, each with its vendor
+          mark. The explicit label keeps the accessible name prefixed and
+          comma-separated: name-from-content pads a hidden separator with
+          spaces. */}
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-brand/40 bg-brand/8 text-brand hover:bg-brand/15 hover:text-brand aria-expanded:bg-brand/15 aria-expanded:text-brand dark:bg-brand/12 dark:hover:bg-brand/20 dark:aria-expanded:bg-brand/20"
+            aria-label={
+              tierPicks.length === 0
+                ? undefined
+                : `Subscriptions: ${tierPicks.map(({ vendor, tier }) => `${vendor} ${tier.shortLabel}`).join(", ")}`
+            }
+          />
+        }
+      >
+        {tierPicks.length === 0 ? (
+          "Subscriptions"
+        ) : (
+          <span className="flex items-center gap-2">
+            {tierPicks.map(({ family, vendor, tier }) => (
+              <span key={family} className="flex items-center gap-1">
+                <VendorMark vendor={vendor} className="[&>svg]:size-3.5" />
+                {tier.shortLabel}
+              </span>
+            ))}
+          </span>
+        )}
+        <ChevronDown data-icon="inline-end" />
+      </DropdownMenuTrigger>
+      <RouteCard filters={filters} onChange={onChange} pickerFamilies={pickerFamilies} />
+    </DropdownMenu>
+  );
+}
 
 // The popover's brand wash: a translucent brand layer over the popover
 // colour at the trigger's pair (8% light, 12% dark), composited the same way
@@ -43,7 +123,7 @@ function RouteRung(props: Omit<MenuPrimitive.RadioItem.Props, "className">) {
 // side where there is room. The tier-wide discount is the one loud figure on
 // each rung; the price and Fable's exception sit under it. No fill or edge
 // inside is grey; secondary text stays muted.
-export function RouteCard({
+function RouteCard({
   filters,
   onChange,
   pickerFamilies,

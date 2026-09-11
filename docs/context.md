@@ -36,8 +36,12 @@ A feature and its state: what the user has applied to the leaderboard (effort vi
 _Avoid_: using "filter" for the toolbar control itself; that is a picker
 
 **Picker**:
-A toolbar control that sets one filter: the effort buttons, the Models menu, the Subscriptions picker. The Subscriptions picker changes pricing, never row count, so its filter never removes rows.
+A toolbar control that sets one filter: the effort buttons, the Models picker, the Subscriptions picker. The Subscriptions picker changes pricing, never row count, so its filter never removes rows.
 _Avoid_: filter (for the control), selector, dropdown (as a name)
+
+**Models picker**:
+The toolbar control that sets the model filter: a checkbox per model with select-all and clear. UI copy says "Models menu"; internal vocabulary stays "Models picker".
+_Avoid_: model dropdown, model selector
 
 **Subscriptions picker**:
 The user-facing name of the access-route selector. Exactly one access route is selected per subscription family. "API" appears inside it even though API access is not a subscription; internal vocabulary stays "access route".
