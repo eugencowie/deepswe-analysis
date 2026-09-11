@@ -2,6 +2,10 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { formatTierDiscount, formatUsdPerMonth } from "./subscriptions-picker.tsx";
 
+// Only the rung formatters are unit-tested: the picker's trigger and route
+// card are exercised by the e2e filter tests, since the popover is a portal
+// that renders nothing outside a browser.
+
 describe("formatTierDiscount", () => {
   test("renders the discount as a negative percentage", () => {
     expect(formatTierDiscount(0.95)).toBe("−95%");

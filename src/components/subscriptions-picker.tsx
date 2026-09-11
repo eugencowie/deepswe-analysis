@@ -23,8 +23,9 @@ const familyLabels = { claude: "Claude", chatgpt: "ChatGPT" } as const;
 
 // The rung formatters are exported for their unit tests only: the route card
 // is a portal, so it renders nothing with react-dom/server and the figures
-// can't be asserted on markup the way the column formatters are. The cost
-// is fast refresh for this file, which the lint rule below guards.
+// can't be asserted on markup the way the column formatters are. The
+// accepted cost is fast refresh for this file, which is what the suppressed
+// rule protects.
 
 // A tier discount (0.95 for 95% off) as a percentage: one decimal where
 // needed ("−95%", "−97.5%"), minus sign U+2212.

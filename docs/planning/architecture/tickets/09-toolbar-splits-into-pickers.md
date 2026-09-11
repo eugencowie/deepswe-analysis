@@ -15,7 +15,7 @@ Markup, accessible names and behaviour are unchanged.
 ## Acceptance criteria
 
 - [x] A Subscriptions picker component owns the trigger, its accessible name and the route card; a Models picker component owns the checkbox list and its select-all and clear items.
-- [x] The toolbar contains no Subscriptions- or Models-specific logic (the effort buttons stay inline; see Decisions).
+- [x] The toolbar contains no picker-specific logic.
 - [x] The standalone format module is gone; its tests live beside the Subscriptions picker.
 - [x] All e2e filter and theme tests pass unchanged; `vp check` and `vp test` are green.
 
@@ -24,7 +24,7 @@ Markup, accessible names and behaviour are unchanged.
 - Layout: `subscriptions-picker.tsx` and `models-picker.tsx` under `src/components/`; `route-card.tsx` is deleted and `RouteCard` becomes a private function of the Subscriptions picker, keeping its glossary name.
 - Interface: each picker takes `filters`, `onChange` and its option list, and calls the filter transitions (`setRoute`, `toggleModel`, `setModels`) itself. The toolbar's props and App are unchanged.
 - Formatters: `formatTierDiscount` and `formatUsdPerMonth` are exported from the Subscriptions picker module and their tests move verbatim to `subscriptions-picker.test.ts`.
-- Effort buttons: stay inline in the toolbar. The glossary calls them a picker, so the second criterion is narrowed to Subscriptions- and Models-specific logic; a component would be a one-caller wrapper around eight lines.
+- Effort buttons: stay inline in the toolbar, as "What to build" lists them. The glossary calls them a picker, so the second criterion is read as "no Subscriptions- or Models-specific logic"; a component would be a one-caller wrapper around eight lines.
 - Glossary: **Models picker** added as the internal name, with "Models menu" as the UI copy, parallel to Subscriptions picker.
 - No new rendering tests (the e2e filter tests already assert every accessible name); no ADR (reversible, unsurprising); ADR 0007 untouched, its "until the Subscriptions picker is deepened" is now met.
 
