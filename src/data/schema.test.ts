@@ -42,9 +42,9 @@ describe("file schemas are strict", () => {
     expect(() => tiersSnapshotSchema.parse(tampered)).toThrowError(/colour/);
   });
 
-  test("rejects a pass rate above 1", () => {
-    const entry = { ...deepsweSnapshot.entries[0], effort: "tampered", pass_at_1: 1.5 };
-    const tampered = { ...deepsweSnapshot, entries: [...deepsweSnapshot.entries, entry] };
+  test("rejects a Pass@1 above 1", () => {
+    const entry = { ...rawSnapshot.entries[0], effort: "tampered", pass_at_1: 1.5 };
+    const tampered = { ...rawSnapshot, entries: [...rawSnapshot.entries, entry] };
     expect(() => deepsweSnapshotSchema.parse(tampered)).toThrowError(/pass_at_1/);
   });
 

@@ -21,13 +21,13 @@ Vite+ project at the repo root, keeping `docs/` as-is:
 │   ├── refresh-deepswe.ts
 │   └── refresh-openrouter.ts
 ├── src/                       ← React app
-│   ├── data/types.ts          ← shared data-shape types (scripts import from here)
+│   ├── data/schema.ts         ← one schema and inferred type per data file (scripts import from here)
 │   ├── data/derive.ts         ← row expansion + maths (pure functions)
 │   └── ...
 └── .github/workflows/ci.yml
 ```
 
-Data is imported at build time (`import data from "../data/..."`), no runtime fetch. Scripts and app share the types in `src/data/types.ts`.
+Data is imported at build time (`import data from "../data/..."`), no runtime fetch. Scripts and app share the schemas and inferred types in `src/data/schema.ts` (architecture ticket 04).
 
 ## App stack
 

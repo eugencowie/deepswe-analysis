@@ -25,11 +25,11 @@ This is the prefactor for ticket 05.
 
 ## Acceptance criteria
 
-- [ ] One module exports a schema and an inferred type for each of the six data files; no hand-written duplicate of a file shape remains, and `types.ts` is gone.
-- [ ] Neither refresh shell casts a JSON file; every read goes through a schema, and each shell parses its output through the file schema before writing.
-- [ ] The app parses the four files it imports; a schema test parses all six committed data files.
-- [ ] The DeepSWE snapshot, mapping and price-revision schema tests still pass, and `vp check`, `vp test` and the e2e suite are green.
-- [ ] docs/context.md and any ADR that names the old type module are updated if they point at moved symbols.
+- [x] One module exports a schema and an inferred type for each of the six data files; no hand-written duplicate of a file shape remains, and `types.ts` is gone.
+- [x] Neither refresh shell casts a JSON file; every read goes through a schema, and each shell parses its output through the file schema before writing.
+- [x] The app parses the four files it imports; a schema test parses all six committed data files.
+- [x] The DeepSWE snapshot, mapping and price-revision schema tests still pass, and `vp check`, `vp test` and the e2e suite are green.
+- [x] docs/context.md and any ADR that names the old type module are updated if they point at moved symbols.
 
 ## Answer
 

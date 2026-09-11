@@ -19,12 +19,12 @@ const count = z.number().int().nonnegative();
 // whose URL the masthead's provenance line links (automated-refresh ticket 04;
 // a footer line at the time). Distinct from the DeepSWE snapshot's
 // `source_url`, which is the fetched artifact itself.
-const provenance = { source: nonEmpty, sourceUrl: z.url() };
+const provenanceFields = { source: nonEmpty, sourceUrl: z.url() };
 
-export const subscriptionFamilySchema = z.enum(["claude", "chatgpt", "none"]);
+const subscriptionFamilySchema = z.enum(["claude", "chatgpt", "none"]);
 export type SubscriptionFamily = z.infer<typeof subscriptionFamilySchema>;
 
-export const tierIdSchema = z.enum([
+const tierIdSchema = z.enum([
   "claude-pro",
   "claude-max-5x",
   "claude-max-20x",
@@ -36,7 +36,7 @@ export type TierId = z.infer<typeof tierIdSchema>;
 
 // USD per million input, cached-input, and output tokens, as the DeepSWE
 // site's bundle states them.
-export const tokenRatesSchema = z.strictObject({
+const tokenRatesSchema = z.strictObject({
   input: nonNegative,
   cached: nonNegative,
   output: nonNegative,
@@ -53,7 +53,7 @@ export type PriceRevision = z.infer<typeof priceRevisionSchema>;
 // data/price-revisions.json: the bundle's table resolved for the pinned
 // version, rewritten by the DeepSWE refresh whenever the site's differs.
 export const priceRevisionsFileSchema = z.strictObject({
-  ...provenance,
+  ...provenanceFields,
   revisions: z.record(nonEmpty, priceRevisionSchema),
 });
 export type PriceRevisionsFile = z.infer<typeof priceRevisionsFileSchema>;
@@ -62,7 +62,7 @@ const deepsweEntrySchema = z.strictObject({
   model: nonEmpty, // site model id, e.g. "claude-fable-5"
   effort: nonEmpty.nullable(), // null = model's default effort
   pass_at_1: z.number().min(0).max(1), // fraction
-  average_cost_usd: nonNegative, // display-adjusted
+  average_cost_usd: nonNegative, // adjusted by cost_adjustment_factor
   input_tokens: nonNegative, // per-attempt mean; cached_tokens is the subset served from cache
   cached_tokens: nonNegative,
   output_tokens: nonNegative, // per-attempt mean, includes reasoning tokens
@@ -76,7 +76,7 @@ export type DeepsweEntry = z.infer<typeof deepsweEntrySchema>;
 
 // data/deepswe-v1.1.json: the DeepSWE snapshot.
 export const deepsweSnapshotSchema = z.strictObject({
-  ...provenance,
+  ...provenanceFields,
   schema_version: z.literal(2), // 2: price_revisions replaced cost_adjustments, entries gained token means (automated-refresh ticket 10)
   benchmark_version: z.literal("v1.1"),
   source_url: z.url(),
@@ -146,7 +146,7 @@ export const vendorMappingSchema = z.array(vendorMappingEntrySchema);
 
 // data/openrouter-throughput.json: the throughput snapshot.
 export const throughputSnapshotSchema = z.strictObject({
-  ...provenance,
+  ...provenanceFields,
   capturedAt: nonEmpty,
   // Keyed by OpenRouter model id; consumerP50 is tokens/sec, the p50 of the
   // vendor's consumer endpoint (ADR 0002). Models whose vendor runs no
@@ -167,7 +167,7 @@ export type Tier = z.infer<typeof tierSchema>;
 
 // data/tiers.json: the tiers snapshot.
 export const tiersSnapshotSchema = z.strictObject({
-  ...provenance,
+  ...provenanceFields,
   // When SemiAnalysis published the figures (the linked post's date), not
   // when they were transcribed: the masthead shows how old the numbers are.
   publishedAt: nonEmpty,
