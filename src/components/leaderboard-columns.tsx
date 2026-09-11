@@ -1,190 +1,142 @@
-// The leaderboard's columns: every question the table asks about a column
-// (header, cell, tint, bar) and the sort rule (default sort, the two-state
-// toggle, blanks last in both directions). Built once per Leaderboard so the
-// Model column's order is bound in; the table renders whatever the list
-// contains and keeps only the sort state.
+// The leaderboard's columns and its sort rule, as TanStack Table options:
+// every column's header, cell, presentation meta and sort facts, plus the
+// default sort, the two-state toggle and blank-last placement. The table
+// spreads these options over its rows and renders what the instance says.
 
 import type { ReactNode } from "react";
+import {
+  createColumnHelper,
+  createSortedRowModel,
+  metaHelper,
+  rowSortingFeature,
+  tableFeatures,
+  tableOptions,
+} from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/components/ui/utils";
 import { VendorMark } from "@/components/vendor-mark";
-import type { LeaderboardRow } from "@/data/leaderboard";
+import { compareModel, type LeaderboardRow } from "@/data/leaderboard";
 
-export type ColumnId =
-  | "model"
-  | "passAt1"
-  | "avgCost"
-  | "costPerf"
-  | "outTok"
-  | "steps"
-  | "avgTime"
-  | "tokPerSec";
-
-export type SortDirection = "asc" | "desc";
-
-// One column and a direction. There is no unsorted state.
-export type Sort = { columnId: ColumnId; direction: SortDirection };
-
-// What the table reads to render a column. Sort facts stay behind sortRows
-// and toggleSort.
-export type Column = {
-  id: ColumnId;
-  header: string;
+// What the table reads to render a column beyond its header and cell.
+export type ColumnMeta = {
   tooltip?: string;
   // Figures are estimates rather than measurements: the header carries a
   // small muted "est" and the tooltip says what is left out.
   estimate?: true;
-  align: "left" | "right";
   // Derived columns are computed by this project rather than reported by the
   // DeepSWE leaderboard: an enhancement, so they carry the brand tint and a
   // rule sets them apart from the source columns.
-  derived?: boolean;
-  // A 0..1 fraction drawn as a bar behind the cell, so the column's order
-  // reads at a glance. Pass@1 only: it is the one column on a fixed scale.
-  bar?: (row: LeaderboardRow) => number | undefined;
-  cell: (row: LeaderboardRow) => ReactNode;
+  derived?: true;
+  // Figures are right-aligned; neither TanStack nor shadcn aligns by type.
+  align?: "end";
+  // The accessor value, a 0..1 fraction, drawn as a bar behind the cell so
+  // the column's order reads at a glance. Pass@1 only: it is the one column
+  // on a fixed scale.
+  bar?: true;
 };
 
-export type LeaderboardColumns = {
-  columns: Column[];
-  // Pass@1, descending.
-  defaultSort: () => Sort;
-  // A sorted column flips direction; a fresh column starts in its natural
-  // direction.
-  toggleSort: (sort: Sort, columnId: ColumnId) => Sort;
-  sortRows: (rows: LeaderboardRow[], sort: Sort) => LeaderboardRow[];
-};
+const features = tableFeatures({
+  rowSortingFeature,
+  sortedRowModel: createSortedRowModel(),
+  columnMeta: metaHelper<ColumnMeta>(),
+});
 
-export type CompareModel = (a: LeaderboardRow, b: LeaderboardRow) => number;
+const helper = createColumnHelper<typeof features, LeaderboardRow>();
 
-type ColumnSpec = Column & {
-  firstDirection: SortDirection;
-  // Direction is an input rather than applied by negating the result, so
-  // blank cells sort last both ways.
-  compare: (a: LeaderboardRow, b: LeaderboardRow, direction: SortDirection) => number;
-};
+// Every figure column: right-aligned, and blank cells last in both sort
+// directions. TanStack negates a comparator for descending order but applies
+// sortUndefined before that, which is why blanks are undefined on the row.
+const figure = (meta: Omit<ColumnMeta, "align"> = {}) =>
+  ({ sortUndefined: "last", meta: { align: "end", ...meta } }) as const;
 
-export function createColumns({
-  compareModel,
-}: {
-  compareModel: CompareModel;
-}): LeaderboardColumns {
-  const specs: ColumnSpec[] = [
-    {
-      id: "model",
-      header: "Model",
-      align: "left",
-      firstDirection: "asc",
-      compare: (a, b, direction) => (direction === "asc" ? compareModel(a, b) : compareModel(b, a)),
-      cell: modelCell,
+const columns = helper.columns([
+  helper.accessor((row) => row.displayName, {
+    id: "model",
+    header: "Model",
+    sortFn: (a, b) => compareModel(a.original, b.original),
+    cell: ({ row }) => modelCell(row.original),
+  }),
+  helper.accessor("passAt1", {
+    id: "passAt1",
+    header: "Pass@1",
+    ...figure({ bar: true }),
+    sortDescFirst: true,
+    cell: figureCell(formatPassAt1),
+  }),
+  helper.accessor("effectiveCostUsd", {
+    id: "avgCost",
+    header: "Cost",
+    ...figure(),
+    cell: ({ row }) =>
+      row.original.accessRoute === "api"
+        ? formatUsd(row.original.effectiveCostUsd)
+        : struckCost(row.original.apiCostUsd, row.original.effectiveCostUsd),
+  }),
+  helper.accessor("outputTokens", {
+    id: "outTok",
+    header: "Tokens",
+    ...figure(),
+    cell: figureCell(formatTokens),
+  }),
+  helper.accessor("steps", {
+    id: "steps",
+    header: "Steps",
+    ...figure(),
+    cell: figureCell(formatInteger),
+  }),
+  helper.accessor("costPerSolvedTaskUsd", {
+    id: "costPerf",
+    header: "Cost/perf",
+    ...figure({ derived: true, tooltip: "Cost ÷ Pass@1: what you pay per task actually solved" }),
+    // Pass@1 = 0 blanks both values, rendering a single blank cell.
+    cell: ({ row, getValue }) => {
+      const value = getValue();
+      if (value === undefined) return BLANK;
+      return row.original.accessRoute === "api"
+        ? formatUsd(value)
+        : struckCost(row.original.apiCostPerSolvedTaskUsd, value);
     },
-    numericColumn({
-      id: "passAt1",
-      header: "Pass@1",
-      bar: true,
-      value: (row) => row.passAt1,
-      cell: (row) => formatPassAt1(row.passAt1),
-    }),
-    numericColumn({
-      id: "avgCost",
-      header: "Cost",
-      value: (row) => row.effectiveCostUsd,
-      cell: (row) =>
-        row.accessRoute === "api"
-          ? formatUsd(row.effectiveCostUsd)
-          : struckCost(row.apiCostUsd, row.effectiveCostUsd),
-    }),
-    numericColumn({
-      id: "outTok",
-      header: "Tokens",
-      value: (row) => row.outputTokens,
-      cell: (row) => formatTokens(row.outputTokens),
-    }),
-    numericColumn({
-      id: "steps",
-      header: "Steps",
-      value: (row) => row.steps,
-      cell: (row) => formatInteger(row.steps),
-    }),
-    numericColumn({
-      id: "costPerf",
-      header: "Cost/perf",
-      tooltip: "Cost ÷ Pass@1: what you pay per task actually solved",
+  }),
+  helper.accessor("averageTimeSeconds", {
+    id: "avgTime",
+    header: "Time",
+    ...figure({
       derived: true,
-      value: (row) => row.costPerSolvedTaskUsd,
-      // Pass@1 = 0 blanks both values, rendering a single blank cell.
-      cell: (row) =>
-        row.accessRoute === "api" || row.costPerSolvedTaskUsd === undefined
-          ? formatUsd(row.costPerSolvedTaskUsd)
-          : struckCost(row.apiCostPerSolvedTaskUsd, row.costPerSolvedTaskUsd),
-    }),
-    numericColumn({
-      id: "avgTime",
-      header: "Time",
       estimate: true,
       tooltip:
         "Output tokens ÷ vendor API throughput; excludes tool execution and gaps between the agent's calls",
-      derived: true,
-      value: (row) => row.averageTimeSeconds,
-      cell: (row) => formatDuration(row.averageTimeSeconds),
     }),
-    numericColumn({
-      id: "tokPerSec",
-      header: "Tok/s",
+    cell: figureCell(formatDuration),
+  }),
+  helper.accessor("throughputTokPerSec", {
+    id: "tokPerSec",
+    header: "Tok/s",
+    ...figure({
+      derived: true,
       // A measurement (OpenRouter's p50), not an estimate: only Time, which
       // is derived from it, carries "est".
       tooltip:
         "p50 throughput of the vendor's own consumer API (via OpenRouter stats). Not the speed measured in the benchmark run",
-      derived: true,
-      value: (row) => row.throughputTokPerSec,
-      cell: (row) => formatThroughput(row.throughputTokPerSec),
     }),
-  ];
-  const byId = Object.fromEntries(specs.map((s) => [s.id, s])) as Record<ColumnId, ColumnSpec>;
+    sortDescFirst: true,
+    cell: figureCell(formatThroughput),
+  }),
+]);
 
-  return {
-    columns: specs.map(({ firstDirection: _first, compare: _compare, ...column }) => column),
-    defaultSort: () => ({ columnId: "passAt1", direction: "desc" }),
-    toggleSort: (sort, columnId) =>
-      sort.columnId === columnId
-        ? { columnId, direction: sort.direction === "asc" ? "desc" : "asc" }
-        : { columnId, direction: byId[columnId].firstDirection },
-    sortRows: (rows, sort) => {
-      const { compare } = byId[sort.columnId];
-      return rows.toSorted((a, b) => compare(a, b, sort.direction));
-    },
-  };
-}
-
-function numericColumn({
-  value,
-  bar,
-  ...spec
-}: Omit<Column, "align" | "bar"> & {
-  bar?: true; // draw the column's value as a bar; the value must be a 0..1 fraction
-  value: (row: LeaderboardRow) => number | undefined;
-}): ColumnSpec {
-  return {
-    ...spec,
-    bar: bar ? value : undefined,
-    align: "right",
-    firstDirection: "desc",
-    compare: (a, b, direction) => compareBlankLast(value(a), value(b), direction),
-  };
-}
-
-function compareBlankLast(
-  a: number | undefined,
-  b: number | undefined,
-  direction: SortDirection,
-): number {
-  if (a === undefined && b === undefined) return 0;
-  if (a === undefined) return 1;
-  if (b === undefined) return -1;
-  return direction === "asc" ? a - b : b - a;
-}
+// The sort rule: Pass@1 descending by default; a sorted column flips, a
+// fresh column starts best-first (ascending unless the column says
+// otherwise); there is no unsorted state. Sort state is the instance's own
+// and survives row changes.
+export const leaderboardTableOptions = tableOptions<typeof features, LeaderboardRow>({
+  features,
+  columns,
+  getRowId: (row) => `${row.model}|${row.effort ?? ""}|${row.accessRoute}`,
+  initialState: { sorting: [{ id: "passAt1", desc: true }] },
+  enableSortingRemoval: false,
+  sortDescFirst: false,
+});
 
 // Access tags are colour-coded by subscription family.
 const tagClassByFamily = {
@@ -224,23 +176,32 @@ function modelCell(row: LeaderboardRow): ReactNode {
 }
 
 // A tier row's cost: the API cost struck out beside the effective cost.
-function struckCost(apiUsd: number | undefined, effectiveUsd: number | undefined): ReactNode {
+function struckCost(apiUsd: number | undefined, effectiveUsd: number): ReactNode {
   return (
     <>
-      <s className="text-muted-foreground">{formatUsd(apiUsd)}</s> {formatUsd(effectiveUsd)}
+      <s className="text-muted-foreground">{blankOr(apiUsd, formatUsd)}</s>{" "}
+      {formatUsd(effectiveUsd)}
     </>
   );
 }
 
 const BLANK = "–";
 
+function blankOr(value: number | undefined, format: (value: number) => string): string {
+  return value === undefined ? BLANK : format(value);
+}
+
+// A figure cell: the accessor value formatted, or the blank marker.
+function figureCell(format: (value: number) => string) {
+  return ({ getValue }: { getValue: () => number | undefined }) => blankOr(getValue(), format);
+}
+
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
 // Standard two-decimal currency. Sub-cent values collapse to $0.01 or $0.00
 // on purpose: tier rows produce tiny costs, and "effectively free" reads
 // better than a string of leading zeros.
-function formatUsd(value: number | undefined): string {
-  if (value === undefined) return BLANK;
+function formatUsd(value: number): string {
   return usd.format(value);
 }
 
@@ -254,15 +215,13 @@ function formatTokens(value: number): string {
 
 // Always one decimal, so a right-aligned column doesn't go ragged on whole
 // numbers.
-function formatThroughput(value: number | undefined): string {
-  if (value === undefined) return BLANK;
+function formatThroughput(value: number): string {
   return value.toFixed(1);
 }
 
 // Always "Xm Ys": minutes ride past 60 and sub-minute values keep the zero
 // minute, so the column reads uniformly across its whole range.
-function formatDuration(seconds: number | undefined): string {
-  if (seconds === undefined) return BLANK;
+function formatDuration(seconds: number): string {
   const whole = Math.round(seconds);
   return `${Math.floor(whole / 60)}m ${whole % 60}s`;
 }

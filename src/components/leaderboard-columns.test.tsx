@@ -1,11 +1,13 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { useTable } from "@tanstack/react-table";
 import { describe, expect, test } from "vite-plus/test";
 
-import { createColumns, type ColumnId } from "./leaderboard-columns.tsx";
-import type { LeaderboardRow } from "@/data/leaderboard";
+import { leaderboardTableOptions } from "./leaderboard-columns.tsx";
+import { compareModel, type LeaderboardRow } from "@/data/leaderboard";
 
 // A family-"none" API row on a vendor with no mark, at default effort and
-// unmapped, so cell text is the figures alone. Tests override what they exercise.
+// unmapped, so cell text is the figures alone. Tests override what they
+// exercise.
 const row = (overrides: Partial<LeaderboardRow> = {}): LeaderboardRow => ({
   model: "test-model",
   displayName: "Test Model",
@@ -24,20 +26,25 @@ const row = (overrides: Partial<LeaderboardRow> = {}): LeaderboardRow => ({
   ...overrides,
 });
 
-// Model-column order for tests: display name only.
-const byName = (a: LeaderboardRow, b: LeaderboardRow) =>
-  a.displayName.localeCompare(b.displayName, "en");
-const columns = createColumns({ compareModel: byName });
+const { columns } = leaderboardTableOptions;
 
-const markup = (columnId: ColumnId, r: LeaderboardRow) =>
-  renderToStaticMarkup(<>{columns.columns.find((c) => c.id === columnId)!.cell(r)}</>);
-const text = (columnId: ColumnId, r: LeaderboardRow) => markup(columnId, r).replace(/<[^>]+>/g, "");
+// One cell, rendered the way the table renders it: through the adapter and
+// FlexRender, so the cell sees a real context rather than a hand-built one.
+function Cell({ r, columnId }: { r: LeaderboardRow; columnId: string }) {
+  const table = useTable({ ...leaderboardTableOptions, data: [r] });
+  const cell = table
+    .getRowModel()
+    .rows[0].getAllCells()
+    .find((c) => c.column.id === columnId)!;
+  return <table.FlexRender cell={cell} />;
+}
+const markup = (columnId: string, r: LeaderboardRow) =>
+  renderToStaticMarkup(<Cell r={r} columnId={columnId} />);
+const text = (columnId: string, r: LeaderboardRow) => markup(columnId, r).replace(/<[^>]+>/g, "");
 
 describe("columns", () => {
   test("lists the source columns first, then the derived ones", () => {
-    expect(
-      columns.columns.map(({ id, header, derived }) => [id, header, derived ?? false]),
-    ).toEqual([
+    expect(columns.map((c) => [c.id, c.header, c.meta?.derived ?? false])).toEqual([
       ["model", "Model", false],
       ["passAt1", "Pass@1", false],
       ["avgCost", "Cost", false],
@@ -50,13 +57,79 @@ describe("columns", () => {
   });
 
   test("only Time is an estimate and only Pass@1 draws a bar", () => {
-    expect(columns.columns.filter((c) => c.estimate).map((c) => c.id)).toEqual(["avgTime"]);
-    expect(columns.columns.filter((c) => c.bar).map((c) => c.id)).toEqual(["passAt1"]);
-    expect(columns.columns[1].bar?.(row({ passAt1: 0.25 }))).toBe(0.25);
+    expect(columns.filter((c) => c.meta?.estimate).map((c) => c.id)).toEqual(["avgTime"]);
+    expect(columns.filter((c) => c.meta?.bar).map((c) => c.id)).toEqual(["passAt1"]);
   });
 
   test("right-aligns every column but Model", () => {
-    expect(columns.columns.filter((c) => c.align === "left").map((c) => c.id)).toEqual(["model"]);
+    expect(columns.filter((c) => c.meta?.align !== "end").map((c) => c.id)).toEqual(["model"]);
+  });
+});
+
+describe("sort definitions", () => {
+  test("defaults to Pass@1 descending, with a two-state toggle", () => {
+    expect(leaderboardTableOptions.initialState?.sorting).toEqual([{ id: "passAt1", desc: true }]);
+    expect(leaderboardTableOptions.enableSortingRemoval).toBe(false);
+  });
+
+  test("starts best-first: Pass@1 and Tok/s descending, everything else ascending", () => {
+    expect(leaderboardTableOptions.sortDescFirst).toBe(false);
+    expect(columns.filter((c) => c.sortDescFirst).map((c) => c.id)).toEqual([
+      "passAt1",
+      "tokPerSec",
+    ]);
+  });
+
+  test("each figure column sorts by its own row value", () => {
+    const accessorKeys = columns.map((c) => [c.id, "accessorKey" in c ? c.accessorKey : undefined]);
+    expect(accessorKeys).toEqual([
+      ["model", undefined],
+      ["passAt1", "passAt1"],
+      ["avgCost", "effectiveCostUsd"],
+      ["outTok", "outputTokens"],
+      ["steps", "steps"],
+      ["costPerf", "costPerSolvedTaskUsd"],
+      ["avgTime", "averageTimeSeconds"],
+      ["tokPerSec", "throughputTokPerSec"],
+    ]);
+  });
+
+  test("every figure column places blanks last", () => {
+    for (const c of columns) {
+      if (c.id !== "model") expect(c.sortUndefined, c.id).toBe("last");
+    }
+  });
+
+  test("the Model column orders by the Leaderboard's compareModel", () => {
+    const rows = [
+      row({ displayName: "B" }),
+      row({ displayName: "A", effort: "max" }),
+      row({ displayName: "A" }),
+    ];
+    function Order({ desc }: { desc: boolean }) {
+      const table = useTable({
+        ...leaderboardTableOptions,
+        data: rows,
+        initialState: { sorting: [{ id: "model", desc }] },
+      });
+      return (
+        <>
+          {table
+            .getRowModel()
+            .rows.map((r) => `${r.original.displayName} ${r.original.effort ?? ""}|`)}
+        </>
+      );
+    }
+    const label = (r: LeaderboardRow) => `${r.displayName} ${r.effort ?? ""}|`;
+    expect(renderToStaticMarkup(<Order desc={false} />)).toBe(
+      rows.toSorted(compareModel).map(label).join(""),
+    );
+    expect(renderToStaticMarkup(<Order desc />)).toBe(
+      rows
+        .toSorted((a, b) => compareModel(b, a))
+        .map(label)
+        .join(""),
+    );
   });
 });
 
@@ -139,123 +212,5 @@ describe("figure cells", () => {
     const blank = row({ throughputTokPerSec: undefined, averageTimeSeconds: undefined });
     expect(text("avgTime", blank)).toBe("–");
     expect(text("tokPerSec", blank)).toBe("–");
-  });
-});
-
-describe("sort", () => {
-  const rows = [
-    row({ displayName: "B", throughputTokPerSec: 30, passAt1: 0.5 }),
-    row({ displayName: "C", throughputTokPerSec: undefined, passAt1: 0.7 }),
-    row({ displayName: "A", throughputTokPerSec: 10, passAt1: 0.6 }),
-  ];
-  const names = (sorted: LeaderboardRow[]) => sorted.map((r) => r.displayName);
-
-  test("defaults to Pass@1 descending", () => {
-    expect(columns.defaultSort()).toEqual({ columnId: "passAt1", direction: "desc" });
-    expect(names(columns.sortRows(rows, columns.defaultSort()))).toEqual(["C", "A", "B"]);
-  });
-
-  test("puts blanks last in both directions", () => {
-    expect(names(columns.sortRows(rows, { columnId: "tokPerSec", direction: "desc" }))).toEqual([
-      "B",
-      "A",
-      "C",
-    ]);
-    expect(names(columns.sortRows(rows, { columnId: "tokPerSec", direction: "asc" }))).toEqual([
-      "A",
-      "B",
-      "C",
-    ]);
-  });
-
-  test("orders the Model column by the Leaderboard's comparator both ways", () => {
-    expect(names(columns.sortRows(rows, { columnId: "model", direction: "asc" }))).toEqual([
-      "A",
-      "B",
-      "C",
-    ]);
-    expect(names(columns.sortRows(rows, { columnId: "model", direction: "desc" }))).toEqual([
-      "C",
-      "B",
-      "A",
-    ]);
-  });
-
-  test("orders each figure column by its own value", () => {
-    // Every column sorts the four rows differently, so a column that sorted
-    // by another column's value would produce the wrong order.
-    const figures = [
-      row({
-        displayName: "a",
-        passAt1: 0.9,
-        effectiveCostUsd: 1,
-        outputTokens: 2000,
-        steps: 30,
-        costPerSolvedTaskUsd: 40,
-        averageTimeSeconds: 400,
-        throughputTokPerSec: 10,
-      }),
-      row({
-        displayName: "b",
-        passAt1: 0.7,
-        effectiveCostUsd: 3,
-        outputTokens: 4000,
-        steps: 10,
-        costPerSolvedTaskUsd: 20,
-        averageTimeSeconds: 200,
-        throughputTokPerSec: 30,
-      }),
-      row({
-        displayName: "c",
-        passAt1: 0.5,
-        effectiveCostUsd: 2,
-        outputTokens: 1000,
-        steps: 40,
-        costPerSolvedTaskUsd: 30,
-        averageTimeSeconds: 100,
-        throughputTokPerSec: 40,
-      }),
-      row({
-        displayName: "d",
-        passAt1: 0.3,
-        effectiveCostUsd: 4,
-        outputTokens: 3000,
-        steps: 20,
-        costPerSolvedTaskUsd: 10,
-        averageTimeSeconds: 300,
-        throughputTokPerSec: 20,
-      }),
-    ];
-    const expected: Record<Exclude<ColumnId, "model">, string[]> = {
-      passAt1: ["a", "b", "c", "d"],
-      avgCost: ["d", "b", "c", "a"],
-      outTok: ["b", "d", "a", "c"],
-      steps: ["c", "a", "d", "b"],
-      costPerf: ["a", "c", "b", "d"],
-      avgTime: ["a", "d", "b", "c"],
-      tokPerSec: ["c", "b", "d", "a"],
-    };
-    for (const [columnId, order] of Object.entries(expected) as [ColumnId, string[]][]) {
-      expect(names(columns.sortRows(figures, { columnId, direction: "desc" })), columnId).toEqual(
-        order,
-      );
-    }
-  });
-
-  test("does not mutate its input", () => {
-    const before = names(rows);
-    columns.sortRows(rows, { columnId: "model", direction: "asc" });
-    expect(names(rows)).toEqual(before);
-  });
-
-  test("toggling a sorted column flips it; a fresh column starts in its natural direction", () => {
-    const sort = columns.defaultSort();
-    expect(columns.toggleSort(sort, "passAt1")).toEqual({ columnId: "passAt1", direction: "asc" });
-    expect(columns.toggleSort(sort, "avgCost")).toEqual({ columnId: "avgCost", direction: "desc" });
-    expect(columns.toggleSort(sort, "model")).toEqual({ columnId: "model", direction: "asc" });
-    expect(columns.toggleSort({ columnId: "model", direction: "asc" }, "model")).toEqual({
-      columnId: "model",
-      direction: "desc",
-    });
   });
 });

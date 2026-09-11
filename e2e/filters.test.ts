@@ -79,9 +79,11 @@ test("changing filters never resets the sort and both picks surface in the trigg
   page,
 }) => {
   await page.goto("./");
+  // Cost starts ascending: lower is better, so a fresh sort leads with the
+  // best value.
   await page.getByRole("button", { name: "Cost", exact: true }).click();
   const cost = page.getByRole("columnheader", { name: "Cost", exact: true });
-  await expect(cost).toHaveAttribute("aria-sort", "descending");
+  await expect(cost).toHaveAttribute("aria-sort", "ascending");
 
   await page.getByRole("button", { name: "All effort levels" }).click();
   await page.getByRole("button", { name: /^Subscriptions/ }).click();
@@ -89,7 +91,7 @@ test("changing filters never resets the sort and both picks surface in the trigg
   await page.getByRole("menuitemradio", { name: /^Plus/ }).click();
   await page.keyboard.press("Escape");
 
-  await expect(cost).toHaveAttribute("aria-sort", "descending");
+  await expect(cost).toHaveAttribute("aria-sort", "ascending");
   // Both non-API picks in the trigger, Claude first (column order).
   await expect(
     page.getByRole("button", { name: "Subscriptions: Anthropic Max 5x, OpenAI Plus" }),

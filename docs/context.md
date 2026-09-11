@@ -94,6 +94,9 @@ _Avoid_: field, table column (as a name)
 The column the leaderboard is ordered by and its direction; there is always exactly one, and filters never change it. Blank cells go last whichever the direction.
 _Avoid_: ordering, ranking
 
+**Figure column**:
+Every column but Model: one number per row, right-aligned, blank cells last whichever the sort direction.
+
 **Source column**:
 A leaderboard column reported verbatim by the DeepSWE leaderboard (Pass@1, average cost, output tokens, steps).
 
