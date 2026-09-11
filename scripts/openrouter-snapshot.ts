@@ -68,6 +68,36 @@ function isConsumerTag(endpoint: OpenrouterEndpoint, slug: string): boolean {
 
 const serviceTierPattern = /\/(?:flex|priority)$/i;
 
+// Every mapping entry paired with its vendor's consumer provider slug. The
+// vendor mapping is checked over the whole model mapping in one pass, so a
+// vendor someone forgot to map fails the run here, distinct from a null slug
+// that records a vendor deliberately running no consumer endpoint.
+function resolveSlugs(
+  mapping: ModelMappingEntry[],
+  vendorMapping: VendorMappingEntry[],
+): { entry: ModelMappingEntry; slug: string | null }[] {
+  const slugByVendor = new Map(
+    vendorMapping.map((entry) => [entry.vendor, entry.consumerProviderSlug]),
+  );
+  const resolved: { entry: ModelMappingEntry; slug: string | null }[] = [];
+  const unmappedVendors = new Set<string>();
+  for (const entry of mapping) {
+    const slug = slugByVendor.get(entry.vendor);
+    if (slug === undefined) {
+      unmappedVendors.add(entry.vendor);
+    } else {
+      resolved.push({ entry, slug });
+    }
+  }
+  if (unmappedVendors.size > 0) {
+    throw new Error(
+      `Vendor(s) missing from data/vendor-mapping.json: ${[...unmappedVendors].join(", ")}. ` +
+        `Record a consumer provider slug, or null for a vendor that runs no consumer endpoint.`,
+    );
+  }
+  return resolved;
+}
+
 export function buildSnapshot(
   mapping: ModelMappingEntry[],
   vendorMapping: VendorMappingEntry[],
@@ -76,19 +106,7 @@ export function buildSnapshot(
   capturedAt: string,
 ): { snapshot: ThroughputSnapshot; warnings: string[] } {
   const warnings: string[] = [];
-  const slugByVendor = new Map(
-    vendorMapping.map((entry) => [entry.vendor, entry.consumerProviderSlug]),
-  );
-
-  const unmappedVendors = [
-    ...new Set(mapping.map((entry) => entry.vendor).filter((vendor) => !slugByVendor.has(vendor))),
-  ];
-  if (unmappedVendors.length > 0) {
-    throw new Error(
-      `Vendor(s) missing from data/vendor-mapping.json: ${unmappedVendors.join(", ")}. ` +
-        `Record a consumer provider slug, or null for a vendor that runs no consumer endpoint.`,
-    );
-  }
+  const resolved = resolveSlugs(mapping, vendorMapping);
 
   const allEndpoints = [...endpointsByModel.values()].flat();
   if (allEndpoints.length > 0 && allEndpoints.every((e) => e.throughput_last_30m?.p50 == null)) {
@@ -108,7 +126,7 @@ export function buildSnapshot(
   };
 
   const models: ThroughputSnapshot["models"] = {};
-  for (const entry of mapping) {
+  for (const { entry, slug } of resolved) {
     const modelId = entry.openrouterId;
     if (modelId === null) {
       warnings.push(
@@ -126,8 +144,7 @@ export function buildSnapshot(
       );
     }
 
-    const slug = slugByVendor.get(entry.vendor);
-    if (slug === null || slug === undefined) {
+    if (slug === null) {
       warnings.push(
         `Vendor ${entry.vendor} runs no consumer endpoint; "${modelId}" omitted ` +
           `(blank in the UI).${previously(modelId)}`,
