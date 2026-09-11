@@ -4,7 +4,7 @@ import { createColumns } from "@/components/leaderboard-columns";
 import { LeaderboardTable } from "@/components/leaderboard-table";
 import { LeaderboardToolbar } from "@/components/leaderboard-toolbar";
 import { ModeToggle } from "@/components/ui/mode-toggle";
-import { createLeaderboard } from "@/data/leaderboard";
+import { compareModel, createLeaderboard } from "@/data/leaderboard";
 import {
   deepsweSnapshot,
   modelMapping,
@@ -19,7 +19,7 @@ const leaderboard = createLeaderboard({
   throughput: throughputSnapshot,
   tiers,
 });
-const columns = createColumns({ compareModel: leaderboard.compareModel });
+const columns = createColumns({ compareModel });
 
 // The UTC date of a snapshot timestamp, robust to non-UTC offsets in a
 // future refresh (a plain slice would take the offset-local date).
