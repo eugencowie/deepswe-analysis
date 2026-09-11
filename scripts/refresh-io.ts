@@ -7,21 +7,18 @@ import { appendFile, readFile, writeFile } from "node:fs/promises";
 import type { z } from "zod";
 
 // Resolved here so callers name files (`model-mapping.json`) and every message
-// can say `data/<file>`. The `dir` parameter exists for tests.
+// can say `data/<file>`. The trailing `dir` parameter on the tested helpers
+// exists for their tests, which point it at a temp directory.
 const dataDir = new URL("../data/", import.meta.url);
 
 // A required data file: missing or malformed is a hard error either way.
-export async function readDataFile<T>(
-  name: string,
-  schema: z.ZodType<T>,
-  dir: URL = dataDir,
-): Promise<T> {
-  return schema.parse(JSON.parse(await readFile(new URL(name, dir), "utf8")));
+export async function readDataFile<T>(name: string, schema: z.ZodType<T>): Promise<T> {
+  return schema.parse(JSON.parse(await readFile(new URL(name, dataDir), "utf8")));
 }
 
 // A missing snapshot is a legitimate first run; a corrupt one is a repo problem
-// that would silently disable the change and disappearance audits, so it
-// hard-errors naming the file.
+// that would silently disable the DeepSWE change check and the OpenRouter
+// disappearance audit (ADR 0002), so it hard-errors naming the file.
 export async function readExistingSnapshot<T>(
   name: string,
   schema: z.ZodType<T>,

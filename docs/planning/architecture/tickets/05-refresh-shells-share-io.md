@@ -1,7 +1,7 @@
 # 05: Refresh shells share their I/O and one existing-snapshot policy
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: 04
 
 ## What to build
@@ -18,7 +18,7 @@ Refresh PR output (console lines and the summary text) stays byte-identical.
 - Paths: helpers take a file name (`model-mapping.json`) and resolve it against `data/` themselves, so every message names `data/<file>`. Two readers: `readDataFile(name, schema)` for required files (a missing file is a hard error via ENOENT, as today) and `readExistingSnapshot(name, schema)` for the two snapshots (ENOENT is `null`; corrupt JSON or a schema mismatch throws naming the file).
 - Corrupt-file wording is generic (`data/<file> is not a valid data file — fix or delete it. (<cause>)`); zod's cause names the field. The ticket pins Refresh PR output, not error text.
 - `writeDataFile(name, schema, value)` parses then writes the original object, so no write can skip validation. Price revisions gain the check; the mapping write drops its own `grown` parse.
-- Fetch: `fetchBytes(url, accept)` plus `fetchJson(url, schema, init)` layered on it. OpenRouter's authenticated retry loop keeps its own `fetch` and error message: it branches on 429 and 404 before parsing and is not one of the five duplicated pieces.
+- Fetch: `fetchBytes(url, accept)` plus `fetchJson(url, schema)` layered on it. OpenRouter's authenticated retry loop keeps its own `fetch` and error message: it branches on 429 and 404 before parsing and is not one of the five duplicated pieces.
 - Warnings: one `warn(message)` with the `warning: ` prefix; callers loop. Summary: `publishSummary(summary)` reads `GITHUB_OUTPUT` itself and is a no-op when unset, as today.
 - Tests: `scripts/refresh-io.test.ts` only. Missing snapshot is `null`; corrupt JSON and schema-invalid JSON both throw naming the file; write rejects an invalid value without touching the file; `fetchJson` on a non-OK response throws with status and URL (stubbed `fetch`); the summary append writes the heredoc with a delimiter absent from the summary (`GITHUB_OUTPUT` stubbed to a temp file).
 - Verification: `OPENROUTER_API_KEY` is in the local `.env`, so both halves run live before and after the change. DeepSWE must report "No content change" with an identical summary. OpenRouter always rewrites: the file diff may touch only per-model values and `capturedAt`, and the summaries differ only there.
@@ -26,7 +26,15 @@ Refresh PR output (console lines and the summary text) stays byte-identical.
 
 ## Acceptance criteria
 
-- [ ] A shared scripts module provides fetch-and-parse, read-and-parse, JSON write, warning printing and the summary append; both shells use it and no duplicated copies remain.
-- [ ] A corrupt existing DeepSWE snapshot fails the run with a message naming the file; a missing one still counts as a first run.
-- [ ] The DeepSWE and OpenRouter snapshot test suites pass unchanged, and `vp check` and `vp test` are green.
-- [ ] Running both refresh scripts against the current checked-in data produces the same files and summaries as before the change.
+- [x] A shared scripts module provides fetch-and-parse, read-and-parse, JSON write, warning printing and the summary append; both shells use it and no duplicated copies remain.
+- [x] A corrupt existing DeepSWE snapshot fails the run with a message naming the file; a missing one still counts as a first run.
+- [x] The DeepSWE and OpenRouter snapshot test suites pass unchanged, and `vp check` and `vp test` are green.
+- [x] Running both refresh scripts against the current checked-in data produces the same files and summaries as before the change.
+
+## Answer
+
+Built in one commit. `scripts/refresh-io.ts` exports `readDataFile`, `readExistingSnapshot`, `writeDataFile`, `fetchBytes`, `fetchJson`, `warn` and `publishSummary`; both shells use them and no copy of the five duplicated pieces remains. `readExistingSnapshot`, `writeDataFile` and their tests take a trailing `dir` argument pointing at a temp directory; messages still say `data/<file>`, since the override exists only for tests. `refresh-io.test.ts` carries the six agreed cases plus three cheap neighbours (pretty-print and key order on write, the OK path of `fetchJson`, the no-op when `GITHUB_OUTPUT` is unset).
+
+Verified live with the local key: both halves run before and after the change against the same checked-in data. The DeepSWE console output, summary and files were byte-identical ("No content change"); the OpenRouter file and summary differed only in `capturedAt` and per-model values. `vp check` green, 164 tests pass.
+
+Review findings settled: ticket close-out and the Decisions' `fetchJson` signature corrected; the untested `dir` parameter dropped from `readDataFile`; the first-run policy comment lives on the helper only, citing ADR 0002; the summary test converts the file URL with `fileURLToPath`. Not taken: a `parseJson(text, schema)` helper for the three `schema.parse(JSON.parse(...))` sites and the artifact line, which is one expression and reads fine inline.

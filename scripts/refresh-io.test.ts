@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { z } from "zod";
 import { fetchJson, publishSummary, readExistingSnapshot, writeDataFile } from "./refresh-io.ts";
@@ -86,7 +86,7 @@ describe("publishSummary", () => {
     const dir = await tempDir();
     const output = new URL("output.txt", dir);
     await writeFile(output, "earlier=1\n");
-    vi.stubEnv("GITHUB_OUTPUT", output.pathname);
+    vi.stubEnv("GITHUB_OUTPUT", fileURLToPath(output));
     // Upstream text that tries to close a guessable delimiter.
     const summary = "### Summary\nSUMMARY\nEOF\n";
     await publishSummary(summary);

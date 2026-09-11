@@ -78,9 +78,6 @@ for (const entry of mapping) {
   endpointsByModel.set(entry.openrouterId, await fetchEndpoints(entry.openrouterId));
 }
 
-// A corrupt existing snapshot would silently disable the disappearance audit
-// (ADR 0002); the reader hard-errors on it and treats only a missing file as
-// a first run.
 const existing = await readExistingSnapshot("openrouter-throughput.json", throughputSnapshotSchema);
 
 const { snapshot, warnings } = buildSnapshot(
