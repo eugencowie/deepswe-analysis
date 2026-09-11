@@ -3,6 +3,7 @@
 // the four snapshots; tests build it from fixtures through the same interface.
 
 import type {
+  DeepsweEntry,
   DeepsweSnapshot,
   ModelMappingEntry,
   SubscriptionFamily,
@@ -29,6 +30,7 @@ export type LeaderboardRow = {
   effort?: string; // absent = the model's default effort
   accessRoute: AccessRoute;
   accessTag?: AccessTag; // absent on API rows
+  isBestEntry: boolean; // the model's best entry (docs/context.md); the same on every route
   passAt1: number;
   effectiveCostUsd: number;
   costPerSolvedTaskUsd?: number; // absent when passAt1 is 0
@@ -138,7 +140,13 @@ export function createLeaderboard({
       subscriptions: { claude: "api", chatgpt: "api" },
       models: new Set(modelOptions.map(({ model }) => model)),
     }),
-    visibleRows: (filters) => filterRows(rows, filters),
+    visibleRows: (filters) =>
+      rows.filter(
+        (row) =>
+          filters.models.has(row.model) &&
+          (row.family === "none" || filters.subscriptions[row.family] === row.accessRoute) &&
+          (filters.effortView === "all" || row.isBestEntry),
+      ),
   };
 }
 
@@ -158,6 +166,7 @@ function deriveRows(
   tiers: Tier[],
 ): LeaderboardRow[] {
   const byModel = new Map(mapping.map((entry) => [entry.leaderboardModel, entry]));
+  const bestByModel = bestEntries(snapshot.entries);
   return snapshot.entries.flatMap((entry) => {
     const mapped = byModel.get(entry.model);
     if (!mapped) {
@@ -170,6 +179,7 @@ function deriveRows(
         ? undefined
         : throughput.models[mapped.openrouterId]?.consumerP50;
     const familyTiers = tiers.filter((tier) => tier.family === mapped.family);
+    const isBestEntry = bestByModel.get(entry.model) === entry;
     const row = (
       accessRoute: AccessRoute,
       accessTag: AccessTag | undefined,
@@ -182,6 +192,7 @@ function deriveRows(
       effort: entry.effort ?? undefined,
       accessRoute,
       accessTag,
+      isBestEntry,
       passAt1: entry.pass_at_1,
       effectiveCostUsd,
       costPerSolvedTaskUsd: costPerSolvedTask(effectiveCostUsd, entry.pass_at_1),
@@ -241,45 +252,31 @@ export function toggleModel(filters: LeaderboardFilters, model: string): Leaderb
   return setModels(filters, models);
 }
 
-function filterRows(rows: LeaderboardRow[], filters: LeaderboardFilters): LeaderboardRow[] {
-  // Best keeps each model's best entry: the highest Pass@1 on the raw
-  // fraction, with the higher effort level winning an exact tie. This is the
-  // DeepSWE site's rule; for claude-fable-5 it picks xhigh over max. Chosen
-  // per model, so every access route shows the same entry.
-  const bestEntry = new Map<string, LeaderboardRow>();
-  if (filters.effortView === "best") {
-    for (const row of rows) {
-      const incumbent = bestEntry.get(row.model);
-      if (incumbent === undefined || outscores(row, incumbent)) bestEntry.set(row.model, row);
-    }
+// Each model's best entry: the highest Pass@1 on the raw fraction, with the
+// higher effort level winning an exact tie. This is the DeepSWE site's rule;
+// for claude-fable-5 it picks xhigh over max. Chosen per model, so every
+// access route of the entry is best together.
+function bestEntries(entries: DeepsweEntry[]): Map<string, DeepsweEntry> {
+  const best = new Map<string, DeepsweEntry>();
+  for (const entry of entries) {
+    const incumbent = best.get(entry.model);
+    if (incumbent === undefined || outscores(entry, incumbent)) best.set(entry.model, entry);
   }
-  // Guarded, not `row.effort === best?.effort`: a model missing from the map
-  // would otherwise match its default-effort rows, undefined against undefined.
-  const isBest = (row: LeaderboardRow) => {
-    const best = bestEntry.get(row.model);
-    return best !== undefined && best.effort === row.effort;
-  };
-  return rows.filter(
-    (row) =>
-      filters.models.has(row.model) &&
-      (row.family === "none" || filters.subscriptions[row.family] === row.accessRoute) &&
-      (filters.effortView === "all" || isBest(row)),
-  );
+  return best;
 }
 
-// The DeepSWE site's Best comparator: higher Pass@1, then higher effort.
-function outscores(row: LeaderboardRow, incumbent: LeaderboardRow): boolean {
-  if (row.passAt1 !== incumbent.passAt1) return row.passAt1 > incumbent.passAt1;
-  return effortRank(row.effort) > effortRank(incumbent.effort);
+function outscores(entry: DeepsweEntry, incumbent: DeepsweEntry): boolean {
+  if (entry.pass_at_1 !== incumbent.pass_at_1) return entry.pass_at_1 > incumbent.pass_at_1;
+  return effortRank(entry.effort) > effortRank(incumbent.effort);
 }
 
-// Semantic effort order for the Model-sort tiebreak and the Best-view
-// tiebreak, matching the DeepSWE site; the default effort ranks lowest,
-// unknown efforts highest.
+// Semantic effort order for the Model-sort tiebreak and the Best-entry
+// tiebreak, matching the DeepSWE site; the default effort (null on a snapshot
+// entry, undefined on a row) ranks lowest, unknown efforts highest.
 const EFFORT_ORDER = ["minimal", "low", "medium", "high", "xhigh", "max"];
 
-function effortRank(effort: string | undefined): number {
-  if (effort === undefined) return -1;
+function effortRank(effort: string | null | undefined): number {
+  if (effort == null) return -1;
   const rank = EFFORT_ORDER.indexOf(effort);
   return rank === -1 ? EFFORT_ORDER.length : rank;
 }

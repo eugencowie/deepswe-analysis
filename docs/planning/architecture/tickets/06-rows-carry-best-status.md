@@ -1,7 +1,7 @@
 # 06: Rows carry their Best-entry status
 
 Type: task
-Status: ready-for-agent
+Status: resolved
 Blocked by: none (can start immediately)
 
 ## What to build
@@ -12,7 +12,20 @@ Best-view behaviour is unchanged: highest Pass@1 on the raw fraction, higher eff
 
 ## Acceptance criteria
 
-- [ ] Each leaderboard row states whether it is its model's best entry; the value is identical across the model's access routes.
-- [ ] The visible-rows filter is one predicate with no per-call intermediate state.
-- [ ] Existing visible-rows tests (tie-break, same entry per route, single default-effort entry) pass without weakening.
-- [ ] The e2e effort-toggle test passes unchanged; `vp check` and `vp test` are green.
+- [x] Each leaderboard row states whether it is its model's best entry; the value is identical across the model's access routes.
+- [x] The visible-rows filter is one predicate with no per-call intermediate state.
+- [x] Existing visible-rows tests (tie-break, same entry per route, single default-effort entry) pass without weakening.
+- [x] The e2e effort-toggle test passes unchanged; `vp check` and `vp test` are green.
+
+## Decisions (grilled 2026-09-11)
+
+- Field: `isBestEntry: boolean`, required on every row, named for the glossary term. Not a per-row `bestEffort` string compared against `row.effort`; that would bring back the undefined-against-undefined case.
+- Decided over snapshot entries inside `deriveRows`, before the per-route fan-out, so every route of an entry gets the same flag by construction. The comparator compares entries, not rows; a model missing from the best map cannot occur because the map is built from the entries being iterated.
+- The DeepSWE rule comment (highest raw Pass@1, higher effort on a tie, Fable 5 picks xhigh over max) lives once on the best-entry computation. The filter predicate carries no comment.
+- One new test under `rows` asserts the flag: exactly the expected effort's rows are flagged per model and every route of that entry agrees. `bestFixture` is hoisted so `rows` and `visibleRows` share it, and one of its models joins the Claude family so the route assertion has tier rows to check; the visibleRows tests stay untouched.
+- `filterRows` goes; the predicate is inlined into the `visibleRows` closure in `createLeaderboard`.
+- No ADR: easy to reverse and not surprising. The glossary already defines Best entry and needs no edit.
+
+## Answer
+
+Built in commit `beb6230` and the review follow-up on this branch. `deriveRows` decides each model's best entry over the snapshot entries and stamps `isBestEntry` on every row of that entry; `visibleRows` is one inlined predicate. Review findings applied: the flag is computed once per entry above the per-route row factory, `effortRank` accepts the snapshot's null directly, and the new test asserts the set of flagged efforts per model so a second flagged effort cannot hide.

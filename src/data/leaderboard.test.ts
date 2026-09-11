@@ -35,6 +35,12 @@ const sources = {
 };
 const live = () => createLeaderboard(sources);
 
+// A family's access routes in row order: the API, then its tiers.
+const familyRoutes = (family: "claude" | "chatgpt"): AccessRoute[] => [
+  "api",
+  ...tiers.filter((tier) => tier.family === family).map((tier) => tier.id),
+];
+
 // Synthetic family-"none" models: rows come from the snapshot.
 const mappingFixture = (models: string[]): ModelMappingEntry[] =>
   models.map((model) => ({
@@ -45,6 +51,36 @@ const mappingFixture = (models: string[]): ModelMappingEntry[] =>
     family: "none" as const,
     usageMultiplier: 1,
   }));
+
+// Models whose best entry exercises each branch of the Best rule. "inverted"
+// is a Claude-family model so its entries fan out over every Claude route.
+const bestFixture = () => {
+  const base = deepsweSnapshot.entries[0];
+  const entry = (model: string, effort: string | null, pass_at_1: number) => ({
+    ...base,
+    model,
+    effort,
+    pass_at_1,
+  });
+  const snapshot = {
+    ...deepsweSnapshot,
+    entries: [
+      entry("inverted", "max", 0.5),
+      entry("inverted", "xhigh", 0.6),
+      entry("ordinary", "high", 0.3),
+      entry("ordinary", "xhigh", 0.4),
+      // max listed before high so a last-tie-wins bug would pick high.
+      entry("tied", "max", 0.5),
+      entry("tied", "high", 0.5),
+      entry("tied", "xhigh", 0.4),
+      entry("single", null, 0.7),
+    ],
+  };
+  const mapping = mappingFixture(["inverted", "ordinary", "tied", "single"]).map((e) =>
+    e.leaderboardModel === "inverted" ? { ...e, family: "claude" as const } : e,
+  );
+  return createLeaderboard({ ...sources, snapshot, mapping });
+};
 
 describe("rows", () => {
   const { rows } = live();
@@ -209,6 +245,27 @@ describe("rows", () => {
     }).rows;
     expect(row.effectiveCostUsd).toBe(1);
     expect(row.apiCostUsd).toBe(1);
+  });
+
+  test("each row states whether it is its model's best entry, the same on every route", () => {
+    const flagged = bestFixture().rows.filter((row) => row.isBestEntry);
+    // Distinct flagged efforts per model: one each, or a second effort is
+    // over-flagged.
+    const flaggedEfforts = new Map<string, Set<string | undefined>>();
+    for (const row of flagged) {
+      flaggedEfforts.set(row.model, (flaggedEfforts.get(row.model) ?? new Set()).add(row.effort));
+    }
+    const only = (effort: string | undefined) => new Set([effort]);
+    expect(flaggedEfforts).toEqual(
+      new Map([
+        ["inverted", only("xhigh")],
+        ["ordinary", only("xhigh")],
+        ["tied", only("max")],
+        ["single", only(undefined)],
+      ]),
+    );
+    const inverted = flagged.filter((row) => row.model === "inverted");
+    expect(inverted.map((row) => row.accessRoute)).toEqual(familyRoutes("claude"));
   });
 
   test("throws when a leaderboard model is missing from the mapping", () => {
@@ -387,40 +444,11 @@ describe("pickerFamilies", () => {
 
 describe("visibleRows", () => {
   const leaderboard = live();
-  const bestFixture = () => {
-    const base = deepsweSnapshot.entries[0];
-    const entry = (model: string, effort: string | null, pass_at_1: number) => ({
-      ...base,
-      model,
-      effort,
-      pass_at_1,
-    });
-    const snapshot = {
-      ...deepsweSnapshot,
-      entries: [
-        entry("inverted", "max", 0.5),
-        entry("inverted", "xhigh", 0.6),
-        entry("ordinary", "high", 0.3),
-        entry("ordinary", "xhigh", 0.4),
-        // max listed before high so a last-tie-wins bug would pick high.
-        entry("tied", "max", 0.5),
-        entry("tied", "high", 0.5),
-        entry("tied", "xhigh", 0.4),
-        entry("single", null, 0.7),
-      ],
-    };
-    const mapping = mappingFixture(["inverted", "ordinary", "tied", "single"]);
-    return createLeaderboard({ ...sources, snapshot, mapping });
-  };
   const { rows, modelOptions } = leaderboard;
   const filters = (overrides: Partial<LeaderboardFilters>): LeaderboardFilters => ({
     ...leaderboard.defaultFilters(),
     ...overrides,
   });
-  const familyRoutes = (family: "claude" | "chatgpt"): AccessRoute[] => [
-    "api",
-    ...tiers.filter((tier) => tier.family === family).map((tier) => tier.id),
-  ];
 
   test("the default view shows one API row per model", () => {
     const visible = leaderboard.visibleRows(leaderboard.defaultFilters());
@@ -590,6 +618,7 @@ describe("compareModel", () => {
     family: "none",
     effort,
     accessRoute: "api",
+    isBestEntry: true,
     passAt1: 0.5,
     effectiveCostUsd: 1,
     costPerSolvedTaskUsd: 2,

@@ -14,6 +14,7 @@ const row = (overrides: Partial<LeaderboardRow> = {}): LeaderboardRow => ({
   vendor: "Test",
   family: "none",
   accessRoute: "api",
+  isBestEntry: true,
   passAt1: 0.7364864,
   effectiveCostUsd: 11.8375,
   costPerSolvedTaskUsd: 11.8375 / 0.7364864,
