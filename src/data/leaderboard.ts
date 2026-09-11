@@ -15,24 +15,27 @@ import type {
 // The marker on a tier row naming its tier; API rows are untagged.
 export type AccessTag = { label: string; family: Exclude<SubscriptionFamily, "none"> };
 
+// Absent facts are undefined, never null: the snapshot's nulls stop at
+// deriveRows, so a column's accessor value is either a figure or undefined,
+// which is what the table's blank-last sort keys on.
 export type LeaderboardRow = {
   model: string;
   displayName: string;
   vendor: string;
   family: SubscriptionFamily;
-  effort: string | null;
+  effort?: string; // absent = the model's default effort
   accessRoute: AccessRoute;
-  accessTag: AccessTag | null; // null on API rows
+  accessTag?: AccessTag; // absent on API rows
   passAt1: number;
   effectiveCostUsd: number;
-  costPerSolvedTaskUsd: number | null; // null when passAt1 is 0
+  costPerSolvedTaskUsd?: number; // absent when passAt1 is 0
   apiCostUsd: number; // the entry's average cost at API pricing; equals effectiveCostUsd on API rows
-  apiCostPerSolvedTaskUsd: number | null; // apiCostUsd ÷ passAt1; null when passAt1 is 0
+  apiCostPerSolvedTaskUsd?: number; // apiCostUsd ÷ passAt1; absent when passAt1 is 0
   outputTokens: number;
   steps: number;
-  openrouterId: string | null; // shown in the model-name tooltip
-  throughputTokPerSec: number | null; // null when unmapped or absent from the snapshot
-  averageTimeSeconds: number | null; // null when throughput is null
+  openrouterId?: string; // shown in the model-name tooltip
+  throughputTokPerSec?: number; // absent when unmapped or absent from the snapshot
+  averageTimeSeconds?: number; // absent when throughput is
 };
 
 export type ModelOption = { model: string; displayName: string; vendor: string };
@@ -80,9 +83,6 @@ export type Leaderboard = {
   // Best view, API routes, every model selected.
   defaultFilters: () => LeaderboardFilters;
   visibleRows: (filters: LeaderboardFilters) => LeaderboardRow[];
-  // Model-column order: display name, then effort (default first), then
-  // access route (API first, then tiers in tiers.json order).
-  compareModel: (a: LeaderboardRow, b: LeaderboardRow) => number;
 };
 
 const FAMILIES: PickerFamily["family"][] = ["claude", "chatgpt"];
@@ -104,7 +104,6 @@ export function createLeaderboard({
   const modelOptions = [...new Map(rows.map((row) => [row.model, row]))]
     .map(([model, { displayName, vendor }]) => ({ model, displayName, vendor }))
     .toSorted((a, b) => a.displayName.localeCompare(b.displayName, "en"));
-  const routeOrder: AccessRoute[] = ["api", ...tiers.map((tier) => tier.id)];
   const pickerFamilies = FAMILIES.map((family) => ({
     family,
     vendor: familyVendor(mapping, family),
@@ -137,14 +136,16 @@ export function createLeaderboard({
       models: new Set(modelOptions.map(({ model }) => model)),
     }),
     visibleRows: (filters) => filterRows(rows, filters),
-    compareModel: (a, b) => {
-      const byName = a.displayName.localeCompare(b.displayName, "en");
-      if (byName !== 0) return byName;
-      const byEffort = effortRank(a.effort) - effortRank(b.effort);
-      if (byEffort !== 0) return byEffort;
-      return routeOrder.indexOf(a.accessRoute) - routeOrder.indexOf(b.accessRoute);
-    },
   };
+}
+
+// Model-column order: display name, then effort (default first). No access
+// route tiebreak: visible rows hold one route per family, so two rows never
+// share a model and effort (docs/context.md, Subscriptions picker).
+export function compareModel(a: LeaderboardRow, b: LeaderboardRow): number {
+  const byName = a.displayName.localeCompare(b.displayName, "en");
+  if (byName !== 0) return byName;
+  return effortRank(a.effort) - effortRank(b.effort);
 }
 
 function deriveRows(
@@ -163,19 +164,19 @@ function deriveRows(
     }
     const throughputTokPerSec =
       mapped.openrouterId === null
-        ? null
-        : (throughput.models[mapped.openrouterId]?.consumerP50 ?? null);
+        ? undefined
+        : throughput.models[mapped.openrouterId]?.consumerP50;
     const familyTiers = tiers.filter((tier) => tier.family === mapped.family);
     const row = (
       accessRoute: AccessRoute,
-      accessTag: AccessTag | null,
+      accessTag: AccessTag | undefined,
       effectiveCostUsd: number,
     ): LeaderboardRow => ({
       model: entry.model,
       displayName: mapped.displayName,
       vendor: mapped.vendor,
       family: mapped.family,
-      effort: entry.effort,
+      effort: entry.effort ?? undefined,
       accessRoute,
       accessTag,
       passAt1: entry.pass_at_1,
@@ -185,13 +186,13 @@ function deriveRows(
       apiCostPerSolvedTaskUsd: costPerSolvedTask(entry.average_cost_usd, entry.pass_at_1),
       outputTokens: entry.output_tokens,
       steps: entry.steps,
-      openrouterId: mapped.openrouterId,
+      openrouterId: mapped.openrouterId ?? undefined,
       throughputTokPerSec,
       averageTimeSeconds:
-        throughputTokPerSec === null ? null : entry.output_tokens / throughputTokPerSec,
+        throughputTokPerSec === undefined ? undefined : entry.output_tokens / throughputTokPerSec,
     });
     return [
-      row("api", null, entry.average_cost_usd),
+      row("api", undefined, entry.average_cost_usd),
       ...familyTiers.map((tier) =>
         row(
           tier.id,
@@ -249,11 +250,15 @@ function filterRows(rows: LeaderboardRow[], filters: LeaderboardFilters): Leader
       if (incumbent === undefined || outscores(row, incumbent)) bestEntry.set(row.model, row);
     }
   }
+  const isBest = (row: LeaderboardRow) => {
+    const best = bestEntry.get(row.model);
+    return best !== undefined && best.effort === row.effort;
+  };
   return rows.filter(
     (row) =>
       filters.models.has(row.model) &&
       (row.family === "none" || filters.subscriptions[row.family] === row.accessRoute) &&
-      (filters.effortView === "all" || row.effort === bestEntry.get(row.model)?.effort),
+      (filters.effortView === "all" || isBest(row)),
   );
 }
 
@@ -264,12 +269,12 @@ function outscores(row: LeaderboardRow, incumbent: LeaderboardRow): boolean {
 }
 
 // Semantic effort order for the Model-sort tiebreak and the Best-view
-// tiebreak, matching the DeepSWE site; null (default effort) ranks lowest,
+// tiebreak, matching the DeepSWE site; the default effort ranks lowest,
 // unknown efforts highest.
 const EFFORT_ORDER = ["minimal", "low", "medium", "high", "xhigh", "max"];
 
-function effortRank(effort: string | null): number {
-  if (effort === null) return -1;
+function effortRank(effort: string | undefined): number {
+  if (effort === undefined) return -1;
   const rank = EFFORT_ORDER.indexOf(effort);
   return rank === -1 ? EFFORT_ORDER.length : rank;
 }
@@ -293,7 +298,7 @@ function tierDiscount(tier: Tier, usageMultiplier: number): number {
   return 1 - subsidisationFactor(tier, usageMultiplier);
 }
 
-function costPerSolvedTask(effectiveCostUsd: number, passAt1: number): number | null {
-  if (passAt1 === 0) return null;
+function costPerSolvedTask(effectiveCostUsd: number, passAt1: number): number | undefined {
+  if (passAt1 === 0) return undefined;
   return effectiveCostUsd / passAt1;
 }

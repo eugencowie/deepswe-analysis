@@ -4,16 +4,14 @@ import { describe, expect, test } from "vite-plus/test";
 import { createColumns, type ColumnId } from "./leaderboard-columns.tsx";
 import type { LeaderboardRow } from "@/data/leaderboard";
 
-// A family-"none" API row on a vendor with no mark, so cell text is the
-// figures alone. Tests override what they exercise.
+// A family-"none" API row on a vendor with no mark, at default effort and
+// unmapped, so cell text is the figures alone. Tests override what they exercise.
 const row = (overrides: Partial<LeaderboardRow> = {}): LeaderboardRow => ({
   model: "test-model",
   displayName: "Test Model",
   vendor: "Test",
   family: "none",
-  effort: null,
   accessRoute: "api",
-  accessTag: null,
   passAt1: 0.7364864,
   effectiveCostUsd: 11.8375,
   costPerSolvedTaskUsd: 11.8375 / 0.7364864,
@@ -21,7 +19,6 @@ const row = (overrides: Partial<LeaderboardRow> = {}): LeaderboardRow => ({
   apiCostPerSolvedTaskUsd: 11.8375 / 0.7364864,
   outputTokens: 117565.69,
   steps: 99.04,
-  openrouterId: null,
   throughputTokPerSec: 58.75,
   averageTimeSeconds: 74,
   ...overrides,
@@ -112,8 +109,8 @@ describe("figure cells", () => {
       accessRoute: "claude-pro",
       accessTag: { label: "Pro", family: "claude" },
       passAt1: 0,
-      costPerSolvedTaskUsd: null,
-      apiCostPerSolvedTaskUsd: null,
+      costPerSolvedTaskUsd: undefined,
+      apiCostPerSolvedTaskUsd: undefined,
     });
     expect(markup("costPerf", zero)).toBe("–");
   });
@@ -139,7 +136,7 @@ describe("figure cells", () => {
   });
 
   test("Time and Tok/s are blank without throughput", () => {
-    const blank = row({ throughputTokPerSec: null, averageTimeSeconds: null });
+    const blank = row({ throughputTokPerSec: undefined, averageTimeSeconds: undefined });
     expect(text("avgTime", blank)).toBe("–");
     expect(text("tokPerSec", blank)).toBe("–");
   });
@@ -148,7 +145,7 @@ describe("figure cells", () => {
 describe("sort", () => {
   const rows = [
     row({ displayName: "B", throughputTokPerSec: 30, passAt1: 0.5 }),
-    row({ displayName: "C", throughputTokPerSec: null, passAt1: 0.7 }),
+    row({ displayName: "C", throughputTokPerSec: undefined, passAt1: 0.7 }),
     row({ displayName: "A", throughputTokPerSec: 10, passAt1: 0.6 }),
   ];
   const names = (sorted: LeaderboardRow[]) => sorted.map((r) => r.displayName);

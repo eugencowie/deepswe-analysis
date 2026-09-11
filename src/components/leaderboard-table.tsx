@@ -138,7 +138,7 @@ export function LeaderboardTable({
           <TableRow key={row.id}>
             {row.getAllCells().map((cell, index) => {
               const column = columns.columns[index];
-              const bar = column.bar?.(row.original) ?? null;
+              const bar = column.bar?.(row.original);
               return (
                 <TableCell
                   key={cell.id}
@@ -148,7 +148,7 @@ export function LeaderboardTable({
                     column.align === "right" && "tabular-nums",
                   )}
                 >
-                  {bar === null ? (
+                  {bar === undefined ? (
                     <table.FlexRender cell={cell} />
                   ) : (
                     <span className="relative block h-5 leading-5">

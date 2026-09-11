@@ -43,7 +43,7 @@ export type Column = {
   derived?: boolean;
   // A 0..1 fraction drawn as a bar behind the cell, so the column's order
   // reads at a glance. Pass@1 only: it is the one column on a fixed scale.
-  bar?: (row: LeaderboardRow) => number | null;
+  bar?: (row: LeaderboardRow) => number | undefined;
   cell: (row: LeaderboardRow) => ReactNode;
 };
 
@@ -116,7 +116,7 @@ export function createColumns({
       value: (row) => row.costPerSolvedTaskUsd,
       // Pass@1 = 0 blanks both values, rendering a single blank cell.
       cell: (row) =>
-        row.accessRoute === "api" || row.costPerSolvedTaskUsd === null
+        row.accessRoute === "api" || row.costPerSolvedTaskUsd === undefined
           ? formatUsd(row.costPerSolvedTaskUsd)
           : struckCost(row.apiCostPerSolvedTaskUsd, row.costPerSolvedTaskUsd),
     }),
@@ -164,7 +164,7 @@ function numericColumn({
   ...spec
 }: Omit<Column, "align" | "bar"> & {
   bar?: true; // draw the column's value as a bar; the value must be a 0..1 fraction
-  value: (row: LeaderboardRow) => number | null;
+  value: (row: LeaderboardRow) => number | undefined;
 }): ColumnSpec {
   return {
     ...spec,
@@ -175,10 +175,14 @@ function numericColumn({
   };
 }
 
-function compareBlankLast(a: number | null, b: number | null, direction: SortDirection): number {
-  if (a === null && b === null) return 0;
-  if (a === null) return 1;
-  if (b === null) return -1;
+function compareBlankLast(
+  a: number | undefined,
+  b: number | undefined,
+  direction: SortDirection,
+): number {
+  if (a === undefined && b === undefined) return 0;
+  if (a === undefined) return 1;
+  if (b === undefined) return -1;
   return direction === "asc" ? a - b : b - a;
 }
 
@@ -195,7 +199,7 @@ function modelCell(row: LeaderboardRow): ReactNode {
   return (
     <>
       <VendorMark vendor={row.vendor} className="mr-1.5" />
-      {row.openrouterId === null ? (
+      {row.openrouterId === undefined ? (
         row.displayName
       ) : (
         <Tooltip>
@@ -203,7 +207,7 @@ function modelCell(row: LeaderboardRow): ReactNode {
           <TooltipContent>{row.openrouterId}</TooltipContent>
         </Tooltip>
       )}
-      {row.effort !== null && (
+      {row.effort !== undefined && (
         // A real space, so copied text and the accessible name stay readable.
         <>
           {" "}
@@ -220,7 +224,7 @@ function modelCell(row: LeaderboardRow): ReactNode {
 }
 
 // A tier row's cost: the API cost struck out beside the effective cost.
-function struckCost(apiUsd: number | null, effectiveUsd: number | null): ReactNode {
+function struckCost(apiUsd: number | undefined, effectiveUsd: number | undefined): ReactNode {
   return (
     <>
       <s className="text-muted-foreground">{formatUsd(apiUsd)}</s> {formatUsd(effectiveUsd)}
@@ -235,8 +239,8 @@ const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" 
 // Standard two-decimal currency. Sub-cent values collapse to $0.01 or $0.00
 // on purpose: tier rows produce tiny costs, and "effectively free" reads
 // better than a string of leading zeros.
-function formatUsd(value: number | null): string {
-  if (value === null) return BLANK;
+function formatUsd(value: number | undefined): string {
+  if (value === undefined) return BLANK;
   return usd.format(value);
 }
 
@@ -250,15 +254,15 @@ function formatTokens(value: number): string {
 
 // Always one decimal, so a right-aligned column doesn't go ragged on whole
 // numbers.
-function formatThroughput(value: number | null): string {
-  if (value === null) return BLANK;
+function formatThroughput(value: number | undefined): string {
+  if (value === undefined) return BLANK;
   return value.toFixed(1);
 }
 
 // Always "Xm Ys": minutes ride past 60 and sub-minute values keep the zero
 // minute, so the column reads uniformly across its whole range.
-function formatDuration(seconds: number | null): string {
-  if (seconds === null) return BLANK;
+function formatDuration(seconds: number | undefined): string {
+  if (seconds === undefined) return BLANK;
   const whole = Math.round(seconds);
   return `${Math.floor(whole / 60)}m ${whole % 60}s`;
 }

@@ -2,6 +2,7 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { deepsweSnapshot, modelMapping, throughputSnapshot, tiers } from "./sources.ts";
 import {
+  compareModel,
   createLeaderboard,
   setEffortView,
   setModels,
@@ -46,8 +47,10 @@ const mappingFixture = (models: string[]): ModelMappingEntry[] =>
 
 describe("rows", () => {
   const { rows } = live();
-  const sourceEntry = (row: { model: string; effort: string | null }) =>
-    deepsweSnapshot.entries.find((e) => e.model === row.model && e.effort === row.effort)!;
+  const sourceEntry = (row: { model: string; effort?: string }) =>
+    deepsweSnapshot.entries.find(
+      (e) => e.model === row.model && e.effort === (row.effort ?? null),
+    )!;
 
   test("expands every entry into an API row plus one row per family tier", () => {
     const familyOf = new Map(modelMapping.map((entry) => [entry.leaderboardModel, entry.family]));
@@ -173,8 +176,8 @@ describe("rows", () => {
       entries: [{ ...deepsweSnapshot.entries[0], model: "claude-fable-5", pass_at_1: 0 }],
     };
     const [row] = createLeaderboard({ ...sources, snapshot, throughput: throughputFixture }).rows;
-    expect(row.costPerSolvedTaskUsd).toBeNull();
-    expect(row.apiCostPerSolvedTaskUsd).toBeNull();
+    expect(row.costPerSolvedTaskUsd).toBeUndefined();
+    expect(row.apiCostPerSolvedTaskUsd).toBeUndefined();
   });
 
   test("rows carry mapping display names and families", () => {
@@ -241,8 +244,8 @@ describe("rows", () => {
     );
     expect(glm.length).toBeGreaterThan(0);
     for (const row of glm) {
-      expect(row.throughputTokPerSec).toBeNull();
-      expect(row.averageTimeSeconds).toBeNull();
+      expect(row.throughputTokPerSec).toBeUndefined();
+      expect(row.averageTimeSeconds).toBeUndefined();
     }
   });
 
@@ -255,8 +258,8 @@ describe("rows", () => {
     }).rows.filter((row) => row.model === "glm-5-3");
     expect(glm.length).toBeGreaterThan(0);
     for (const row of glm) {
-      expect(row.throughputTokPerSec).toBeNull();
-      expect(row.averageTimeSeconds).toBeNull();
+      expect(row.throughputTokPerSec).toBeUndefined();
+      expect(row.averageTimeSeconds).toBeUndefined();
     }
   });
 });
@@ -277,7 +280,7 @@ describe("access tags", () => {
   test("API rows are untagged", () => {
     const apiRows = rows.filter((row) => row.accessRoute === "api");
     expect(apiRows.length).toBeGreaterThan(0);
-    expect(apiRows.every((row) => row.accessTag === null)).toBe(true);
+    expect(apiRows.every((row) => row.accessTag === undefined)).toBe(true);
   });
 });
 
@@ -458,7 +461,7 @@ describe("visibleRows", () => {
 
   test("Best keeps a single default-effort entry", () => {
     const visible = bestFixture().visibleRows(bestFixture().defaultFilters());
-    expect(visible.find((row) => row.model === "single")?.effort).toBeNull();
+    expect(visible.find((row) => row.model === "single")?.effort).toBeUndefined();
   });
 
   test("All effort levels with API only shows every entry once", () => {
@@ -579,18 +582,13 @@ describe("filter transitions", () => {
 });
 
 describe("compareModel", () => {
-  const row = (
-    displayName: string,
-    effort: string | null,
-    accessRoute: AccessRoute = "api",
-  ): LeaderboardRow => ({
+  const row = (displayName: string, effort: string | undefined): LeaderboardRow => ({
     model: displayName.toLowerCase(),
     displayName,
     vendor: "Test",
     family: "none",
     effort,
-    accessRoute,
-    accessTag: null,
+    accessRoute: "api",
     passAt1: 0.5,
     effectiveCostUsd: 1,
     costPerSolvedTaskUsd: 2,
@@ -602,51 +600,28 @@ describe("compareModel", () => {
     throughputTokPerSec: 50,
     averageTimeSeconds: 2,
   });
-  const { compareModel } = live();
 
   test("sorts by display name first", () => {
-    const sorted = [row("B", null), row("A", "max")].toSorted(compareModel);
+    const sorted = [row("B", undefined), row("A", "max")].toSorted(compareModel);
     expect(sorted.map((r) => r.displayName)).toEqual(["A", "B"]);
   });
 
   test("breaks ties by semantic effort order, default first", () => {
-    const efforts = ["max", "high", null, "xhigh", "low", "medium"];
+    const efforts = ["max", "high", undefined, "xhigh", "low", "medium"];
     const sorted = efforts.map((effort) => row("A", effort)).toSorted(compareModel);
-    expect(sorted.map((r) => r.effort)).toEqual([null, "low", "medium", "high", "xhigh", "max"]);
-  });
-
-  test("breaks effort ties by access route: API first, then tiers in tiers.json order", () => {
-    const routes: AccessRoute[] = [
-      "claude-max-20x",
-      "chatgpt-plus",
-      "api",
-      "claude-pro",
-      "chatgpt-pro-20x",
-      "claude-max-5x",
-      "chatgpt-pro-5x",
-    ];
-    const sorted = routes.map((route) => row("A", "max", route)).toSorted(compareModel);
-    expect(sorted.map((r) => r.accessRoute)).toEqual([
-      "api",
-      "claude-pro",
-      "claude-max-5x",
-      "claude-max-20x",
-      "chatgpt-plus",
-      "chatgpt-pro-5x",
-      "chatgpt-pro-20x",
+    expect(sorted.map((r) => r.effort)).toEqual([
+      undefined,
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
     ]);
   });
 
-  test("the route order follows the tiers it was built with, not a constant", () => {
-    const reversed = createLeaderboard({ ...sources, tiers: tiers.toReversed() });
-    const routes: AccessRoute[] = ["claude-pro", "api", "chatgpt-pro-20x"];
-    const sorted = routes.map((route) => row("A", "max", route)).toSorted(reversed.compareModel);
-    expect(sorted.map((r) => r.accessRoute)).toEqual(["api", "chatgpt-pro-20x", "claude-pro"]);
-  });
-
   test("tiers.json lists each family's tiers in ascending price order", () => {
-    // The tiebreak spec is "tiers in ascending price order"; the route order
-    // follows file order, so this guards the price invariant behind it.
+    // The Subscriptions picker lists tiers in file order and the spec says
+    // "ascending price", so this guards the price invariant behind it.
     for (const family of ["claude", "chatgpt"]) {
       const prices = tiers
         .filter((tier) => tier.family === family)
