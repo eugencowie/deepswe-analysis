@@ -1,5 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
+import type { ReactNode } from "react";
+import { useTable, type Column } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp } from "lucide-react";
 
 import {
@@ -12,74 +12,47 @@ import {
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/components/ui/utils";
-import type { Column, LeaderboardColumns } from "@/components/leaderboard-columns";
+import { leaderboardTableOptions, type ColumnMeta } from "@/components/leaderboard-columns";
 import type { LeaderboardRow } from "@/data/leaderboard";
 
+type LeaderboardColumn = Column<typeof leaderboardTableOptions.features, LeaderboardRow>;
+
 // Classes shared by a column's header and cells. Both are tinted and ruled
-// the same way so the two cannot drift apart. The tint is fainter than the
-// Subscriptions trigger's because it covers a large area.
-const columnClasses = (columns: Column[], index: number) => {
-  const column = columns[index];
-  const derivedBoundary = column.derived === true && columns[index - 1]?.derived !== true;
+// the same way so the two cannot drift apart. The rule marks where the
+// derived block starts, so it needs the previous column too. The tint is
+// fainter than the Subscriptions trigger's because it covers a large area.
+function columnClasses(column: LeaderboardColumn, previous: LeaderboardColumn | undefined) {
+  const meta: ColumnMeta | undefined = column.columnDef.meta;
   return cn(
-    column.align === "right" && "text-right",
-    column.derived && "bg-brand/5 dark:bg-brand/8",
-    derivedBoundary && "border-l border-brand/30",
+    meta?.align === "end" && "text-right",
+    meta?.derived && "bg-brand/5 dark:bg-brand/8",
+    meta?.derived && !previous?.columnDef.meta?.derived && "border-l border-brand/30",
   );
-};
+}
 
-const features = tableFeatures({});
-const helper = createColumnHelper<typeof features, LeaderboardRow>();
-
-export function LeaderboardTable({
-  rows,
-  columns,
-  empty,
-}: {
-  rows: LeaderboardRow[];
-  columns: LeaderboardColumns;
-  empty?: ReactNode;
-}) {
-  const [sort, setSort] = useState(columns.defaultSort);
-
-  // Sorting lives outside TanStack: its sorted row model reverses comparator
-  // results for descending order, which would put blank cells first.
-  const sortedRows = useMemo(() => columns.sortRows(rows, sort), [columns, rows, sort]);
-
-  const tanstackColumns = useMemo(
-    () =>
-      helper.columns(
-        columns.columns.map((column) =>
-          helper.display({
-            id: column.id,
-            header: column.header,
-            cell: ({ row }) => column.cell(row.original),
-          }),
-        ),
-      ),
-    [columns],
-  );
-  const table = useTable({ features, columns: tanstackColumns, data: sortedRows });
+export function LeaderboardTable({ rows, empty }: { rows: LeaderboardRow[]; empty?: ReactNode }) {
+  const table = useTable({ ...leaderboardTableOptions, data: rows });
+  const columnCount = table.getAllColumns().length;
 
   return (
     <Table>
       <TableHeader>
         {table.getHeaderGroups().map((group) => (
           <TableRow key={group.id} className="text-muted-foreground">
-            {/* Column order never changes, so headers zip with columns by index. */}
-            {group.headers.map((header, index) => {
-              const column = columns.columns[index];
-              const isSorted = sort.columnId === column.id;
+            {group.headers.map((header, index, headers) => {
+              const { meta } = header.column.columnDef;
+              const classes = columnClasses(header.column, headers[index - 1]?.column);
+              const sorted = header.column.getIsSorted();
               const label = (
                 <>
                   <span
                     className={cn(
-                      column.tooltip && "underline decoration-dotted underline-offset-4",
+                      meta?.tooltip && "underline decoration-dotted underline-offset-4",
                     )}
                   >
                     <table.FlexRender header={header} />
                   </span>
-                  {column.estimate && (
+                  {meta?.estimate && (
                     <span className="ml-1 text-[11px] font-normal text-muted-foreground/80">
                       est
                     </span>
@@ -90,32 +63,28 @@ export function LeaderboardTable({
                 <TableHead
                   key={header.id}
                   aria-sort={
-                    isSorted ? (sort.direction === "asc" ? "ascending" : "descending") : undefined
+                    sorted === false ? undefined : sorted === "asc" ? "ascending" : "descending"
                   }
-                  className={cn(columnClasses(columns.columns, index), column.bar && "w-40")}
+                  className={cn(classes, meta?.bar && "w-40")}
                 >
                   <button
                     type="button"
-                    onClick={() => setSort((current) => columns.toggleSort(current, column.id))}
+                    onClick={header.column.getToggleSortingHandler()}
                     className={cn(
                       "inline-flex cursor-pointer items-center gap-1 font-medium",
-                      isSorted && "text-foreground",
+                      sorted && "text-foreground",
                     )}
                   >
-                    {column.tooltip ? (
+                    {meta?.tooltip ? (
                       <Tooltip>
                         <TooltipTrigger render={<span />}>{label}</TooltipTrigger>
-                        <TooltipContent>{column.tooltip}</TooltipContent>
+                        <TooltipContent>{meta.tooltip}</TooltipContent>
                       </Tooltip>
                     ) : (
                       label
                     )}
-                    {isSorted &&
-                      (sort.direction === "asc" ? (
-                        <ArrowUp aria-hidden className="size-3.5" />
-                      ) : (
-                        <ArrowDown aria-hidden className="size-3.5" />
-                      ))}
+                    {sorted === "asc" && <ArrowUp aria-hidden className="size-3.5" />}
+                    {sorted === "desc" && <ArrowDown aria-hidden className="size-3.5" />}
                   </button>
                 </TableHead>
               );
@@ -126,27 +95,22 @@ export function LeaderboardTable({
       <TableBody>
         {rows.length === 0 && (
           <TableRow>
-            <TableCell
-              colSpan={columns.columns.length}
-              className="py-8 text-center text-muted-foreground"
-            >
+            <TableCell colSpan={columnCount} className="py-8 text-center text-muted-foreground">
               {empty}
             </TableCell>
           </TableRow>
         )}
         {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id}>
-            {row.getAllCells().map((cell, index) => {
-              const column = columns.columns[index];
-              const bar = column.bar?.(row.original);
+            {row.getAllCells().map((cell, index, cells) => {
+              const { meta } = cell.column.columnDef;
+              const classes = columnClasses(cell.column, cells[index - 1]?.column);
+              const value = cell.getValue();
+              const bar = meta?.bar && typeof value === "number" ? value : undefined;
               return (
                 <TableCell
                   key={cell.id}
-                  className={cn(
-                    "py-1.5",
-                    columnClasses(columns.columns, index),
-                    column.align === "right" && "tabular-nums",
-                  )}
+                  className={cn("py-1.5", classes, meta?.align === "end" && "tabular-nums")}
                 >
                   {bar === undefined ? (
                     <table.FlexRender cell={cell} />

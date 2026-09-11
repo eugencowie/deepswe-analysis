@@ -13,3 +13,4 @@ Rows were derived in `derive.ts`, filtered in `filter.ts`, and then re-joined to
 - `subsidisationFactor`, `effortRank` and the route order are no longer exported; tests exercise them only through the constructor's outputs.
 - The tiers price-ordering invariant remains a live-data test, since route order follows tiers.json file order.
 - `compareBlankLast` and `SortDirection` moved beside the table (`src/components/leaderboard-sort.ts`) pending a column module; they never depended on the leaderboard.
+- Superseded in part by [ADR 0008](0008-tanstack-owns-sorting.md): the access-route tiebreak could never fire on visible rows, so `compareModel` is module-level and no longer bound to the instance.

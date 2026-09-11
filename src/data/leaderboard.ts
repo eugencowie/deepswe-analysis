@@ -35,7 +35,7 @@ export type LeaderboardRow = {
   steps: number;
   openrouterId?: string; // shown in the model-name tooltip
   throughputTokPerSec?: number; // absent when unmapped or absent from the snapshot
-  averageTimeSeconds?: number; // absent when throughput is
+  averageTimeSeconds?: number; // absent whenever throughput is
 };
 
 export type ModelOption = { model: string; displayName: string; vendor: string };
@@ -250,6 +250,8 @@ function filterRows(rows: LeaderboardRow[], filters: LeaderboardFilters): Leader
       if (incumbent === undefined || outscores(row, incumbent)) bestEntry.set(row.model, row);
     }
   }
+  // Guarded, not `row.effort === best?.effort`: a model missing from the map
+  // would otherwise match its default-effort rows, undefined against undefined.
   const isBest = (row: LeaderboardRow) => {
     const best = bestEntry.get(row.model);
     return best !== undefined && best.effort === row.effort;

@@ -17,3 +17,4 @@ ADR 0005 left column formatting and sort "pending a column module". Until then a
 - TanStack Table stays as the table's render wiring (ADR 0001). Here it is a pass-through; dropping it is a separate decision.
 - The table's interface is `rows`, `columns`, `empty`. Class strings, including the left rule on the first derived column, remain the table's business.
 - The e2e "sort survives a filter change" test stays: after this change its remaining value is the table's `useState` wiring.
+- Superseded in part by [ADR 0008](0008-tanstack-owns-sorting.md): the stated reason for sorting outside TanStack was incomplete (`sortUndefined: "last"` places blanks last both ways), the sort rule now lives in TanStack options, and the table's interface is `rows` and `empty`: it reads the column list itself.
