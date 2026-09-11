@@ -16,10 +16,8 @@ const row = (overrides: Partial<LeaderboardRow> = {}): LeaderboardRow => ({
   accessRoute: "api",
   isBestEntry: true,
   passAt1: 0.7364864,
-  effectiveCostUsd: 11.8375,
-  costPerSolvedTaskUsd: 11.8375 / 0.7364864,
-  apiCostUsd: 11.8375,
-  apiCostPerSolvedTaskUsd: 11.8375 / 0.7364864,
+  cost: { api: 11.8375, effective: 11.8375 },
+  costPerSolvedTask: { api: 11.8375 / 0.7364864, effective: 11.8375 / 0.7364864 },
   outputTokens: 117565.69,
   steps: 99.04,
   throughputTokPerSec: 58.75,
@@ -86,13 +84,29 @@ describe("sort definitions", () => {
     expect(accessorKeys).toEqual([
       ["model", undefined],
       ["passAt1", "passAt1"],
-      ["avgCost", "effectiveCostUsd"],
+      ["avgCost", undefined],
       ["outTok", "outputTokens"],
       ["steps", "steps"],
-      ["costPerf", "costPerSolvedTaskUsd"],
+      ["costPerf", undefined],
       ["avgTime", "averageTimeSeconds"],
       ["tokPerSec", "throughputTokPerSec"],
     ]);
+  });
+
+  test("cost accessors return effective figures and preserve absent cost per solved task", () => {
+    const tier = row({
+      accessRoute: "claude-pro",
+      cost: { api: 20, effective: 1 },
+      costPerSolvedTask: { api: 40, effective: 2 },
+    });
+    const cost = columns.find((c) => c.id === "avgCost");
+    const costPerf = columns.find((c) => c.id === "costPerf");
+    if (!cost || !("accessorFn" in cost) || !costPerf || !("accessorFn" in costPerf)) {
+      throw new Error("Cost columns must define function accessors");
+    }
+    expect(cost.accessorFn(tier, 0)).toBe(1);
+    expect(costPerf.accessorFn(tier, 0)).toBe(2);
+    expect(costPerf.accessorFn(row({ costPerSolvedTask: undefined }), 0)).toBeUndefined();
   });
 
   test("every figure column places blanks last", () => {
@@ -158,20 +172,18 @@ describe("figure cells", () => {
   });
 
   test("Cost is two-decimal currency, collapsing sub-cent values", () => {
-    expect(text("avgCost", row({ effectiveCostUsd: 11.8375 }))).toBe("$11.84");
-    expect(text("avgCost", row({ effectiveCostUsd: 1183.7 }))).toBe("$1,183.70");
-    expect(text("avgCost", row({ effectiveCostUsd: 0.0061889 }))).toBe("$0.01");
-    expect(text("avgCost", row({ effectiveCostUsd: 0.004 }))).toBe("$0.00");
+    expect(text("avgCost", row({ cost: { api: 11.8375, effective: 11.8375 } }))).toBe("$11.84");
+    expect(text("avgCost", row({ cost: { api: 1183.7, effective: 1183.7 } }))).toBe("$1,183.70");
+    expect(text("avgCost", row({ cost: { api: 0.0061889, effective: 0.0061889 } }))).toBe("$0.01");
+    expect(text("avgCost", row({ cost: { api: 0.004, effective: 0.004 } }))).toBe("$0.00");
   });
 
   test("tier rows strike out the API cost beside the effective cost", () => {
     const tier = row({
       accessRoute: "claude-max-20x",
       accessTag: { label: "Max 20x", family: "claude" },
-      apiCostUsd: 11.8375,
-      effectiveCostUsd: 0.6064,
-      apiCostPerSolvedTaskUsd: 16,
-      costPerSolvedTaskUsd: 0.8,
+      cost: { api: 11.8375, effective: 0.6064 },
+      costPerSolvedTask: { api: 16, effective: 0.8 },
     });
     expect(markup("avgCost", tier)).toMatch(/^<s[^>]*>\$11\.84<\/s> \$0\.61$/);
     expect(markup("costPerf", tier)).toMatch(/^<s[^>]*>\$16\.00<\/s> \$0\.80$/);
@@ -183,8 +195,7 @@ describe("figure cells", () => {
       accessRoute: "claude-pro",
       accessTag: { label: "Pro", family: "claude" },
       passAt1: 0,
-      costPerSolvedTaskUsd: undefined,
-      apiCostPerSolvedTaskUsd: undefined,
+      costPerSolvedTask: undefined,
     });
     expect(markup("costPerf", zero)).toBe("–");
   });
