@@ -3,8 +3,7 @@
 // land only through human-reviewed commits. Fails without writing anything
 // when a guard rail trips.
 
-import { createHash, randomUUID } from "node:crypto";
-import { appendFile, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import {
   type ModelMappingEntry,
   deepsweSnapshotSchema,
@@ -32,33 +31,29 @@ import {
   openrouterModelsSchema,
   openrouterModelsUrl,
 } from "./mapping-generation.ts";
+import {
+  fetchBytes,
+  fetchJson,
+  publishSummary,
+  readDataFile,
+  readExistingSnapshot,
+  warn,
+  writeDataFile,
+} from "./refresh-io.ts";
 
-async function fetchBytes(url: string, accept = "application/json"): Promise<Buffer> {
-  const response = await fetch(url, { headers: { accept } });
-  if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}: ${url}`);
-  }
-  return Buffer.from(await response.arrayBuffer());
-}
-
-const manifestBytes = await fetchBytes(`${origin}/artifacts/versions.json`);
-const manifest = versionManifestSchema.parse(JSON.parse(manifestBytes.toString("utf8")));
+const manifest = await fetchJson(`${origin}/artifacts/versions.json`, versionManifestSchema);
 
 const artifactBytes = await fetchBytes(artifactUrl(manifest));
 const artifact = leaderboardArtifactSchema.parse(JSON.parse(artifactBytes.toString("utf8")));
 const rawSha256 = createHash("sha256").update(artifactBytes).digest("hex");
 
-const mappingPath = new URL("../data/model-mapping.json", import.meta.url);
-const mapping = modelMappingSchema.parse(JSON.parse(await readFile(mappingPath, "utf8")));
+const mapping = await readDataFile("model-mapping.json", modelMappingSchema);
 
 // The site's price revisions live only in its deployed bundle (ADR 0006), so
 // every run extracts them and the checked-in file follows the site; the
 // change lands in the Refresh PR. Any extraction failure is a hard error:
 // warning and continuing is how the old factor table went stale (ticket 10).
-const priceRevisionsPath = new URL("../data/price-revisions.json", import.meta.url);
-const priceRevisionsFile = priceRevisionsFileSchema.parse(
-  JSON.parse(await readFile(priceRevisionsPath, "utf8")),
-);
+const priceRevisionsFile = await readDataFile("price-revisions.json", priceRevisionsFileSchema);
 const indexHtml = (await fetchBytes(`${origin}/`, "text/html")).toString("utf8");
 const bundlePaths = indexBundlePaths(indexHtml);
 if (bundlePaths.length === 0) {
@@ -78,12 +73,9 @@ const generated: ModelMappingEntry[] = [];
 if (unmapped.length > 0) {
   // An unreachable models API fails the run like any other fetch error; the
   // failure email is the alert and a manual re-run the retry.
-  const bytes = await fetchBytes(openrouterModelsUrl);
-  const listings = openrouterModelsSchema.parse(JSON.parse(bytes.toString("utf8"))).data;
+  const listings = (await fetchJson(openrouterModelsUrl, openrouterModelsSchema)).data;
   const result = generateMappingEntries(unmapped, mapping, listings);
-  for (const warning of result.warnings) {
-    console.warn(`warning: ${warning}`);
-  }
+  result.warnings.forEach(warn);
   generated.push(...result.generated);
 }
 
@@ -94,36 +86,28 @@ const { snapshot, warnings } = normalize(
   revisions,
   rawSha256,
 );
-for (const warning of warnings) {
-  console.warn(`warning: ${warning}`);
-}
+warnings.forEach(warn);
 
 // Written only after normalize succeeds, so a tripped guard rail still leaves
 // everything untouched.
 if (priceRevisionsChanged) {
-  await writeFile(
-    priceRevisionsPath,
-    `${JSON.stringify({ ...priceRevisionsFile, revisions }, null, 2)}\n`,
-  );
+  await writeDataFile("price-revisions.json", priceRevisionsFileSchema, {
+    ...priceRevisionsFile,
+    revisions,
+  });
   console.log(
     `Wrote data/price-revisions.json from the site's bundle: ${Object.keys(revisions).join(", ")}.`,
   );
 }
 if (generated.length > 0) {
-  const grown = [...mapping, ...generated];
-  modelMappingSchema.parse(grown);
-  await writeFile(mappingPath, `${JSON.stringify(grown, null, 2)}\n`);
+  await writeDataFile("model-mapping.json", modelMappingSchema, [...mapping, ...generated]);
   console.log(
     `Generated mapping entries in data/model-mapping.json: ` +
       `${generated.map((entry) => entry.leaderboardModel).join(", ")}.`,
   );
 }
 
-const snapshotPath = new URL("../data/deepswe-v1.1.json", import.meta.url);
-const existing = await readFile(snapshotPath, "utf8").then(
-  (text) => deepsweSnapshotSchema.parse(JSON.parse(text)),
-  () => null,
-);
+const existing = await readExistingSnapshot("deepswe-v1.1.json", deepsweSnapshotSchema);
 const changed = !existing || hasMeaningfulChange(existing, snapshot);
 if (!changed) {
   console.log(
@@ -131,28 +115,20 @@ if (!changed) {
       `(upstream raw_sha256 ${rawSha256}, generated at ${snapshot.source_generated_at}).`,
   );
 } else {
-  // Validated against the file schema before writing, so the refresh can never
-  // commit a snapshot the app rejects at load. The built object is what gets
-  // written: the parse returns a copy in schema key order.
-  deepsweSnapshotSchema.parse(snapshot);
-  await writeFile(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
+  await writeDataFile("deepswe-v1.1.json", deepsweSnapshotSchema, snapshot);
   console.log(
     `Wrote data/deepswe-v1.1.json: ${snapshot.entries.length} entries, ` +
       `source generated at ${snapshot.source_generated_at}.`,
   );
 }
 
-const summary = summarizeRefresh({
-  existing,
-  snapshot,
-  mappingCount: mapping.length,
-  generated,
-  changed,
-  previousPriceRevisions: priceRevisionsFile.revisions,
-});
-if (process.env.GITHUB_OUTPUT) {
-  // Unique delimiter per GitHub's guidance: the summary splices in
-  // upstream-derived text, which must not be able to terminate the heredoc.
-  const delimiter = `SUMMARY_${randomUUID()}`;
-  await appendFile(process.env.GITHUB_OUTPUT, `summary<<${delimiter}\n${summary}\n${delimiter}\n`);
-}
+await publishSummary(
+  summarizeRefresh({
+    existing,
+    snapshot,
+    mappingCount: mapping.length,
+    generated,
+    changed,
+    previousPriceRevisions: priceRevisionsFile.revisions,
+  }),
+);
