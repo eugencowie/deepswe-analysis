@@ -249,13 +249,19 @@ describe("rows", () => {
 
   test("each row states whether it is its model's best entry, the same on every route", () => {
     const flagged = bestFixture().rows.filter((row) => row.isBestEntry);
-    const bestEfforts = new Map(flagged.map((row) => [row.model, row.effort]));
-    expect(bestEfforts).toEqual(
+    // Distinct flagged efforts per model: one each, or a second effort is
+    // over-flagged.
+    const flaggedEfforts = new Map<string, Set<string | undefined>>();
+    for (const row of flagged) {
+      flaggedEfforts.set(row.model, (flaggedEfforts.get(row.model) ?? new Set()).add(row.effort));
+    }
+    const only = (effort: string | undefined) => new Set([effort]);
+    expect(flaggedEfforts).toEqual(
       new Map([
-        ["inverted", "xhigh"],
-        ["ordinary", "xhigh"],
-        ["tied", "max"],
-        ["single", undefined],
+        ["inverted", only("xhigh")],
+        ["ordinary", only("xhigh")],
+        ["tied", only("max")],
+        ["single", only(undefined)],
       ]),
     );
     const inverted = flagged.filter((row) => row.model === "inverted");

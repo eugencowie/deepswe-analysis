@@ -166,7 +166,7 @@ function deriveRows(
   tiers: Tier[],
 ): LeaderboardRow[] {
   const byModel = new Map(mapping.map((entry) => [entry.leaderboardModel, entry]));
-  const bestEntry = bestEntries(snapshot.entries);
+  const bestByModel = bestEntries(snapshot.entries);
   return snapshot.entries.flatMap((entry) => {
     const mapped = byModel.get(entry.model);
     if (!mapped) {
@@ -179,6 +179,7 @@ function deriveRows(
         ? undefined
         : throughput.models[mapped.openrouterId]?.consumerP50;
     const familyTiers = tiers.filter((tier) => tier.family === mapped.family);
+    const isBestEntry = bestByModel.get(entry.model) === entry;
     const row = (
       accessRoute: AccessRoute,
       accessTag: AccessTag | undefined,
@@ -191,7 +192,7 @@ function deriveRows(
       effort: entry.effort ?? undefined,
       accessRoute,
       accessTag,
-      isBestEntry: bestEntry.get(entry.model) === entry,
+      isBestEntry,
       passAt1: entry.pass_at_1,
       effectiveCostUsd,
       costPerSolvedTaskUsd: costPerSolvedTask(effectiveCostUsd, entry.pass_at_1),
@@ -266,16 +267,16 @@ function bestEntries(entries: DeepsweEntry[]): Map<string, DeepsweEntry> {
 
 function outscores(entry: DeepsweEntry, incumbent: DeepsweEntry): boolean {
   if (entry.pass_at_1 !== incumbent.pass_at_1) return entry.pass_at_1 > incumbent.pass_at_1;
-  return effortRank(entry.effort ?? undefined) > effortRank(incumbent.effort ?? undefined);
+  return effortRank(entry.effort) > effortRank(incumbent.effort);
 }
 
-// Semantic effort order for the Model-sort tiebreak and the Best-view
-// tiebreak, matching the DeepSWE site; the default effort ranks lowest,
-// unknown efforts highest.
+// Semantic effort order for the Model-sort tiebreak and the Best-entry
+// tiebreak, matching the DeepSWE site; the default effort (null on a snapshot
+// entry, undefined on a row) ranks lowest, unknown efforts highest.
 const EFFORT_ORDER = ["minimal", "low", "medium", "high", "xhigh", "max"];
 
-function effortRank(effort: string | undefined): number {
-  if (effort === undefined) return -1;
+function effortRank(effort: string | null | undefined): number {
+  if (effort == null) return -1;
   const rank = EFFORT_ORDER.indexOf(effort);
   return rank === -1 ? EFFORT_ORDER.length : rank;
 }
