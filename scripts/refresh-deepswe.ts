@@ -5,11 +5,15 @@
 
 import { createHash, randomUUID } from "node:crypto";
 import { appendFile, readFile, writeFile } from "node:fs/promises";
-import type { DeepsweSnapshot, ModelMappingEntry } from "../src/data/types.ts";
+import {
+  type ModelMappingEntry,
+  deepsweSnapshotSchema,
+  modelMappingSchema,
+  priceRevisionsFileSchema,
+} from "../src/data/schema.ts";
 import {
   extractBundlePriceTable,
   indexBundlePaths,
-  priceRevisionsFileSchema,
   resolvePriceRevisions,
 } from "./deepswe-price-revisions.ts";
 import {
@@ -45,7 +49,7 @@ const artifact = leaderboardArtifactSchema.parse(JSON.parse(artifactBytes.toStri
 const rawSha256 = createHash("sha256").update(artifactBytes).digest("hex");
 
 const mappingPath = new URL("../data/model-mapping.json", import.meta.url);
-const mapping = JSON.parse(await readFile(mappingPath, "utf8")) as ModelMappingEntry[];
+const mapping = modelMappingSchema.parse(JSON.parse(await readFile(mappingPath, "utf8")));
 
 // The site's price revisions live only in its deployed bundle (ADR 0006), so
 // every run extracts them and the checked-in file follows the site; the
@@ -106,7 +110,9 @@ if (priceRevisionsChanged) {
   );
 }
 if (generated.length > 0) {
-  await writeFile(mappingPath, `${JSON.stringify([...mapping, ...generated], null, 2)}\n`);
+  const grown = [...mapping, ...generated];
+  modelMappingSchema.parse(grown);
+  await writeFile(mappingPath, `${JSON.stringify(grown, null, 2)}\n`);
   console.log(
     `Generated mapping entries in data/model-mapping.json: ` +
       `${generated.map((entry) => entry.leaderboardModel).join(", ")}.`,
@@ -115,7 +121,7 @@ if (generated.length > 0) {
 
 const snapshotPath = new URL("../data/deepswe-v1.1.json", import.meta.url);
 const existing = await readFile(snapshotPath, "utf8").then(
-  (text) => JSON.parse(text) as DeepsweSnapshot,
+  (text) => deepsweSnapshotSchema.parse(JSON.parse(text)),
   () => null,
 );
 const changed = !existing || hasMeaningfulChange(existing, snapshot);
@@ -125,6 +131,10 @@ if (!changed) {
       `(upstream raw_sha256 ${rawSha256}, generated at ${snapshot.source_generated_at}).`,
   );
 } else {
+  // Validated against the file schema before writing, so the refresh can never
+  // commit a snapshot the app rejects at load. The built object is what gets
+  // written: the parse returns a copy in schema key order.
+  deepsweSnapshotSchema.parse(snapshot);
   await writeFile(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
   console.log(
     `Wrote data/deepswe-v1.1.json: ${snapshot.entries.length} entries, ` +

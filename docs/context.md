@@ -138,6 +138,10 @@ _Avoid_: base slug, vendor base slug
 The organisation segment of an OpenRouter model id (z-ai in z-ai/glm-5.3), used to recognise a known vendor when generating mapping entries. Not the consumer provider slug: the org slug names who publishes a model, the consumer provider slug names the endpoint that serves it.
 _Avoid_: author, owner
 
+**Data file**:
+One of the checked-in JSON files the site and the refresh scripts read. Every data file is either a snapshot (DeepSWE, throughput, tiers, price revisions) or a mapping (model mapping, vendor mapping); the site treats all of them alike, whoever last wrote them.
+_Avoid_: refresh-written file, hand-maintained file (the model mapping is both), static data
+
 **Snapshot**:
 A checked-in, point-in-time capture of a source, refreshed only through human-reviewed commits, never at build or run time.
 _Avoid_: live data, cache

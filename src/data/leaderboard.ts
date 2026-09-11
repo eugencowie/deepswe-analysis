@@ -3,14 +3,17 @@
 // the four snapshots; tests build it from fixtures through the same interface.
 
 import type {
-  AccessRoute,
   DeepsweSnapshot,
   ModelMappingEntry,
   SubscriptionFamily,
   ThroughputSnapshot,
   Tier,
   TierId,
-} from "./types.ts";
+} from "./schema.ts";
+
+// How you would pay to run a model: direct API, or a specific tier. Every row
+// is an entry combined with one access route (docs/context.md).
+export type AccessRoute = "api" | TierId;
 
 // The marker on a tier row naming its tier; API rows are untagged.
 export type AccessTag = { label: string; family: Exclude<SubscriptionFamily, "none"> };

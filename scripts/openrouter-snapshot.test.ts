@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vite-plus/test";
 import rawModelMapping from "../data/model-mapping.json" with { type: "json" };
 import rawVendorMapping from "../data/vendor-mapping.json" with { type: "json" };
-import type { ModelMappingEntry, ThroughputSnapshot } from "../src/data/types.ts";
+import {
+  type ModelMappingEntry,
+  type ThroughputSnapshot,
+  vendorMappingSchema,
+} from "../src/data/schema.ts";
 import {
   type OpenrouterEndpoint,
   buildSnapshot,
   retryAfterMs,
   summarizeRefresh,
-  vendorMappingSchema,
 } from "./openrouter-snapshot.ts";
 
 const capturedAt = "2026-08-27T12:00:00Z";

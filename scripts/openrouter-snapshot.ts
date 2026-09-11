@@ -7,20 +7,13 @@ import type {
   ModelMappingEntry,
   ThroughputSnapshot,
   VendorMappingEntry,
-} from "../src/data/types.ts";
+} from "../src/data/schema.ts";
 
 export const origin = "https://openrouter.ai";
 
 export function endpointsUrl(modelId: string): string {
   return `${origin}/api/v1/models/${modelId}/endpoints`;
 }
-
-export const vendorMappingSchema = z.array(
-  z.object({
-    vendor: z.string().min(1),
-    consumerProviderSlug: z.string().min(1).nullable(),
-  }),
-);
 
 // Only the fields the selection reads; unknown fields pass through. A mismatch
 // is deliberately a hard error: the documented API path is unverified until

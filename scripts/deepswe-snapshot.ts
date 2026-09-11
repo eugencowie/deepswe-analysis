@@ -1,9 +1,15 @@
 // Pure normalization for the DeepSWE refresh: schemas, guard rails, and the
 // snapshot shape live here so the fetch/write shell stays thin and testable.
 
+import { isDeepStrictEqual } from "node:util";
 import { z } from "zod";
-import type { DeepsweEntry, DeepsweSnapshot, ModelMappingEntry } from "../src/data/types.ts";
-import { type PriceRevision, costAdjustmentFactor } from "./deepswe-price-revisions.ts";
+import type {
+  DeepsweEntry,
+  DeepsweSnapshot,
+  ModelMappingEntry,
+  PriceRevision,
+} from "../src/data/schema.ts";
+import { costAdjustmentFactor } from "./deepswe-price-revisions.ts";
 
 export const origin = "https://deepswe.datacurve.ai";
 export const benchmarkVersion = "v1.1";
@@ -74,7 +80,7 @@ export function hasMeaningfulChange(existing: DeepsweSnapshot, next: DeepsweSnap
     source_latest_job: _job,
     ...rest
   }: DeepsweSnapshot) => rest;
-  return JSON.stringify(strip(existing)) !== JSON.stringify(strip(next));
+  return !isDeepStrictEqual(strip(existing), strip(next));
 }
 
 // The set difference the mapping guard and the entry generator both need:

@@ -9,7 +9,11 @@ import { existsSync } from "node:fs";
 import { appendFile, readFile, writeFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import type { ModelMappingEntry, ThroughputSnapshot } from "../src/data/types.ts";
+import {
+  modelMappingSchema,
+  throughputSnapshotSchema,
+  vendorMappingSchema,
+} from "../src/data/schema.ts";
 import {
   type OpenrouterEndpoint,
   buildSnapshot,
@@ -17,7 +21,6 @@ import {
   endpointsUrl,
   retryAfterMs,
   summarizeRefresh,
-  vendorMappingSchema,
 } from "./openrouter-snapshot.ts";
 
 const envPath = fileURLToPath(new URL("../.env", import.meta.url));
@@ -57,9 +60,9 @@ async function fetchEndpoints(modelId: string): Promise<OpenrouterEndpoint[]> {
   }
 }
 
-const mapping = JSON.parse(
-  await readFile(new URL("../data/model-mapping.json", import.meta.url), "utf8"),
-) as ModelMappingEntry[];
+const mapping = modelMappingSchema.parse(
+  JSON.parse(await readFile(new URL("../data/model-mapping.json", import.meta.url), "utf8")),
+);
 const vendorMapping = vendorMappingSchema.parse(
   JSON.parse(await readFile(new URL("../data/vendor-mapping.json", import.meta.url), "utf8")),
 );
@@ -79,12 +82,12 @@ for (const entry of mapping) {
 // it hard-errors like any other mismatch.
 const snapshotPath = new URL("../data/openrouter-throughput.json", import.meta.url);
 const existing = await readFile(snapshotPath, "utf8").then(
-  (text): ThroughputSnapshot | null => {
+  (text) => {
     try {
-      return JSON.parse(text) as ThroughputSnapshot;
+      return throughputSnapshotSchema.parse(JSON.parse(text));
     } catch (error) {
       throw new Error(
-        `data/openrouter-throughput.json is not valid JSON — fix or delete it. (${String(error)})`,
+        `data/openrouter-throughput.json is not a valid throughput snapshot — fix or delete it. (${String(error)})`,
       );
     }
   },
@@ -105,6 +108,10 @@ for (const warning of warnings) {
   console.warn(`warning: ${warning}`);
 }
 
+// Validated against the file schema before writing, so the refresh can never
+// commit a snapshot the app rejects at load. The built object is what gets
+// written: the parse returns a copy in schema key order.
+throughputSnapshotSchema.parse(snapshot);
 await writeFile(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
 console.log(
   `Wrote data/openrouter-throughput.json: ${Object.keys(snapshot.models).length} models, ` +
