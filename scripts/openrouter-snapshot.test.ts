@@ -172,6 +172,18 @@ describe("guard rails", () => {
     ).toThrow(/Vendor\(s\) missing from data\/vendor-mapping\.json: Unmapped/);
   });
 
+  it("throws for a vendor missing from the vendor mapping even when its only model has no OpenRouter id yet", () => {
+    expect(() =>
+      buildSnapshot(
+        [mappingEntry("m", "Vendor", "vendor/m"), mappingEntry("n", "Unmapped", null)],
+        vendors,
+        new Map([["vendor/m", [endpoint("vendor", 50)]]]),
+        null,
+        capturedAt,
+      ),
+    ).toThrow(/Vendor\(s\) missing from data\/vendor-mapping\.json: Unmapped/);
+  });
+
   it("throws when every endpoint of every model is null — the unauthenticated symptom", () => {
     expect(() =>
       buildSnapshot(

@@ -1,7 +1,13 @@
 import { expect, test } from "@playwright/test";
 
 import { createLeaderboard } from "../src/data/leaderboard.ts";
-import { deepsweSnapshot, modelMapping, throughputSnapshot, tiers } from "../src/data/sources.ts";
+import {
+  deepsweSnapshot,
+  familyVendors,
+  modelMapping,
+  throughputSnapshot,
+  tiers,
+} from "../src/data/sources.ts";
 
 // The default view: best entries, API rows only (tickets 09 and 22).
 const leaderboard = createLeaderboard({
@@ -9,6 +15,7 @@ const leaderboard = createLeaderboard({
   mapping: modelMapping,
   throughput: throughputSnapshot,
   tiers,
+  familyVendors,
 });
 const rowCount = leaderboard.visibleRows(leaderboard.defaultFilters()).length;
 

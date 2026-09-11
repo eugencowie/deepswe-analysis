@@ -24,6 +24,10 @@ const provenanceFields = { source: nonEmpty, sourceUrl: z.url() };
 const subscriptionFamilySchema = z.enum(["claude", "chatgpt", "none"]);
 export type SubscriptionFamily = z.infer<typeof subscriptionFamilySchema>;
 
+// The families the Subscriptions picker shows, in column order: Claude first.
+export type PickerFamilyId = Exclude<SubscriptionFamily, "none">;
+export const PICKER_FAMILIES: readonly PickerFamilyId[] = ["claude", "chatgpt"];
+
 const tierIdSchema = z.enum([
   "claude-pro",
   "claude-max-5x",
@@ -198,23 +202,30 @@ export function assertMappingCoverage(
   }
 }
 
-// The Subscriptions picker shows each family's vendor mark, read from the
-// family's mapping entries: a family with none, or with entries from two
-// vendors, would otherwise lose or mislabel its mark deep in createLeaderboard.
-export function assertFamilyVendors(tiers: Tier[], mapping: ModelMappingEntry[]): void {
-  const families = new Set(tiers.map((tier) => tier.family));
+// Each picker family's one vendor, whose mark labels the family's column in
+// the Subscriptions picker (docs/context.md). Read from the family's mapping
+// entries at load: a family with none, or with entries from two vendors, has
+// no single mark to show, so the load fails naming the family.
+export type FamilyVendors = Record<PickerFamilyId, string>;
+
+export function familyVendors(mapping: ModelMappingEntry[]): FamilyVendors {
+  const vendors = {} as FamilyVendors;
   const parts: string[] = [];
-  for (const family of families) {
-    const vendors = new Set(
+  for (const family of PICKER_FAMILIES) {
+    const found = new Set(
       mapping.filter((entry) => entry.family === family).map((entry) => entry.vendor),
     );
-    if (vendors.size === 0) {
+    const [vendor] = found;
+    if (vendor === undefined) {
       parts.push(`no mapping entry has family "${family}"`);
-    } else if (vendors.size > 1) {
-      parts.push(`family "${family}" spans vendors ${[...vendors].join(", ")}`);
+    } else if (found.size > 1) {
+      parts.push(`family "${family}" spans vendors ${[...found].join(", ")}`);
+    } else {
+      vendors[family] = vendor;
     }
   }
   if (parts.length > 0) {
     throw new Error(parts.join("; "));
   }
+  return vendors;
 }

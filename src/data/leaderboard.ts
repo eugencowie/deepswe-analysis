@@ -1,15 +1,19 @@
 // The Leaderboard: every entry combined with every access route its family
 // allows, plus the questions the toolbar and table ask of it. Built once from
-// the four snapshots; tests build it from fixtures through the same interface.
+// the loaded data files; tests build it from fixtures through the same
+// interface.
 
-import type {
-  DeepsweEntry,
-  DeepsweSnapshot,
-  ModelMappingEntry,
-  SubscriptionFamily,
-  ThroughputSnapshot,
-  Tier,
-  TierId,
+import {
+  type DeepsweEntry,
+  type DeepsweSnapshot,
+  type FamilyVendors,
+  type ModelMappingEntry,
+  PICKER_FAMILIES,
+  type PickerFamilyId,
+  type SubscriptionFamily,
+  type ThroughputSnapshot,
+  type Tier,
+  type TierId,
 } from "./schema.ts";
 
 // How you would pay to run a model: direct API, or a specific tier. Every row
@@ -17,7 +21,7 @@ import type {
 export type AccessRoute = "api" | TierId;
 
 // The marker on a tier row naming its tier; API rows are untagged.
-export type AccessTag = { label: string; family: Exclude<SubscriptionFamily, "none"> };
+export type AccessTag = { label: string; family: PickerFamilyId };
 
 // API and effective figures in USD for the same cost measure.
 export type CostPair = { api: number; effective: number };
@@ -60,8 +64,8 @@ export type PickerTier = {
 };
 
 export type PickerFamily = {
-  family: Exclude<SubscriptionFamily, "none">;
-  vendor: string; // the family's vendor mark, from its mapping entries
+  family: PickerFamilyId;
+  vendor: string; // the family's vendor; VendorMark renders its mark
   tiers: PickerTier[];
 };
 
@@ -91,13 +95,12 @@ export type Leaderboard = {
   visibleRows: (filters: LeaderboardFilters) => LeaderboardRow[];
 };
 
-const FAMILIES: PickerFamily["family"][] = ["claude", "chatgpt"];
-
 export type LeaderboardSources = {
   snapshot: DeepsweSnapshot;
   mapping: ModelMappingEntry[];
   throughput: ThroughputSnapshot;
   tiers: Tier[];
+  familyVendors: FamilyVendors;
 };
 
 export function createLeaderboard({
@@ -105,14 +108,15 @@ export function createLeaderboard({
   mapping,
   throughput,
   tiers,
+  familyVendors,
 }: LeaderboardSources): Leaderboard {
   const rows = deriveRows(snapshot, mapping, throughput, tiers);
   const modelOptions = [...new Map(rows.map((row) => [row.model, row]))]
     .map(([model, { displayName, vendor }]) => ({ model, displayName, vendor }))
     .toSorted((a, b) => a.displayName.localeCompare(b.displayName, "en"));
-  const pickerFamilies = FAMILIES.map((family) => ({
+  const pickerFamilies = PICKER_FAMILIES.map((family) => ({
     family,
-    vendor: familyVendor(mapping, family),
+    vendor: familyVendors[family],
     tiers: tiers
       .filter((tier) => tier.family === family)
       .map((tier) => ({
@@ -284,14 +288,6 @@ function effortRank(effort: string | null | undefined): number {
   if (effort == null) return -1;
   const rank = EFFORT_ORDER.indexOf(effort);
   return rank === -1 ? EFFORT_ORDER.length : rank;
-}
-
-// The vendor mark for a family's picker column. Loaded data has mapping
-// entries from exactly one vendor per family (assertFamilyVendors), so the
-// first entry's vendor is the family's; synthetic fixtures without family
-// entries get an empty vendor, which VendorMark renders as nothing.
-function familyVendor(mapping: ModelMappingEntry[], family: PickerFamily["family"]): string {
-  return mapping.find((candidate) => candidate.family === family)?.vendor ?? "";
 }
 
 // What a dollar of API cost becomes on a tier. The usage multiplier scales the

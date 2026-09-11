@@ -3,9 +3,9 @@ import rawMapping from "../../data/model-mapping.json" with { type: "json" };
 import rawThroughput from "../../data/openrouter-throughput.json" with { type: "json" };
 import rawTiers from "../../data/tiers.json" with { type: "json" };
 import {
-  assertFamilyVendors,
   assertMappingCoverage,
   deepsweSnapshotSchema,
+  familyVendors as readFamilyVendors,
   modelMappingSchema,
   throughputSnapshotSchema,
   tiersSnapshotSchema,
@@ -20,4 +20,4 @@ assertMappingCoverage(deepsweSnapshot, modelMapping);
 export const throughputSnapshot = throughputSnapshotSchema.parse(rawThroughput);
 export const tiersSnapshot = tiersSnapshotSchema.parse(rawTiers);
 export const tiers = tiersSnapshot.tiers;
-assertFamilyVendors(tiers, modelMapping);
+export const familyVendors = readFamilyVendors(modelMapping);

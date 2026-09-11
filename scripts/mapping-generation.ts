@@ -60,30 +60,32 @@ export function generateMappingEntries(
   const mappable = listings.filter(isMappable);
 
   for (const model of unmappedModels) {
-    const candidates = mappable.filter(
-      (listing) => bySlug.has(orgSlug(listing.id)) && normalizedSuffix(listing.id) === model,
-    );
+    // Candidates are listings from known vendors only, each paired with its
+    // vendor info here so nothing downstream looks the vendor up again.
+    const candidates = mappable.flatMap((listing) => {
+      const vendorInfo = bySlug.get(orgSlug(listing.id));
+      return vendorInfo && normalizedSuffix(listing.id) === model ? [{ listing, vendorInfo }] : [];
+    });
 
-    const match = candidates[0];
-    if (!match) continue; // unknown vendor: refresh guard fails the run
+    const first = candidates[0];
+    if (!first) continue; // unknown vendor: refresh guard fails the run
+    const { listing: match, vendorInfo } = first;
 
-    const slugs = new Set(candidates.map((listing) => orgSlug(listing.id)));
+    const slugs = new Set(candidates.map(({ listing }) => orgSlug(listing.id)));
     if (slugs.size > 1) {
       warnings.push(
         `Ambiguous OpenRouter match for "${model}" across vendors ` +
-          `(${candidates.map((listing) => listing.id).join(", ")}); add the entry by hand.`,
+          `(${candidates.map(({ listing }) => listing.id).join(", ")}); add the entry by hand.`,
       );
       continue;
     }
-    const vendorInfo = bySlug.get(orgSlug(match.id));
-    if (!vendorInfo) continue;
 
     // Ambiguous listings are the same model under dot/dash-variant ids, so
     // either name serves; only the id needs a human to pin one.
     if (candidates.length > 1) {
       warnings.push(
         `Ambiguous OpenRouter match for "${model}" ` +
-          `(${candidates.map((listing) => listing.id).join(", ")}); generated with a null ` +
+          `(${candidates.map(({ listing }) => listing.id).join(", ")}); generated with a null ` +
           `OpenRouter id — pin one by hand.`,
       );
       generated.push(entryFor(model, vendorInfo, null, displayNameFrom(match, false)));
