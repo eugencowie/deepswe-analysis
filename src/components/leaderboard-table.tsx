@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useTable, type Column } from "@tanstack/react-table";
+import { useTable } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp } from "lucide-react";
 
 import {
@@ -11,24 +11,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/components/ui/utils";
+import { cn } from "cn";
 import { leaderboardTableOptions, type ColumnMeta } from "@/components/leaderboard-columns";
 import type { LeaderboardRow } from "@/data/leaderboard";
 
-type LeaderboardColumn = Column<typeof leaderboardTableOptions.features, LeaderboardRow>;
-
-// Classes shared by a column's header and cells. Both are tinted and ruled
-// the same way so the two cannot drift apart. The rule marks where the
-// derived block starts, so it needs the previous column too. The tint is
-// fainter than the Subscriptions trigger's because it covers a large area.
-function columnClasses(column: LeaderboardColumn, previous: LeaderboardColumn | undefined) {
-  const meta: ColumnMeta | undefined = column.columnDef.meta;
-  return cn(
-    meta?.align === "end" && "text-right",
-    meta?.derived && "bg-brand/5 dark:bg-brand/8",
-    meta?.derived && !previous?.columnDef.meta?.derived && "border-l border-brand/30",
-  );
-}
+// Classes shared by a column's header and cells, keyed by column id. Both
+// are tinted and ruled the same way so the two cannot drift apart. The rule
+// marks where the derived block starts, so it needs the previous column too.
+// The tint is fainter than the Subscriptions trigger's because it covers a
+// large area. Column meta and order are static, so this is computed once.
+const columnClasses = Object.fromEntries(
+  leaderboardTableOptions.columns.map((column, index, columns) => {
+    const meta: ColumnMeta | undefined = column.meta;
+    const previous: ColumnMeta | undefined = columns[index - 1]?.meta;
+    return [
+      column.id,
+      cn(
+        meta?.align === "end" && "text-right",
+        meta?.derived && "bg-brand/5 dark:bg-brand/8",
+        meta?.derived && !previous?.derived && "border-l border-brand/30",
+      ),
+    ];
+  }),
+);
 
 export function LeaderboardTable({ rows, empty }: { rows: LeaderboardRow[]; empty?: ReactNode }) {
   const table = useTable({ ...leaderboardTableOptions, data: rows });
@@ -39,9 +44,9 @@ export function LeaderboardTable({ rows, empty }: { rows: LeaderboardRow[]; empt
       <TableHeader>
         {table.getHeaderGroups().map((group) => (
           <TableRow key={group.id} className="text-muted-foreground">
-            {group.headers.map((header, index, headers) => {
+            {group.headers.map((header) => {
               const { meta } = header.column.columnDef;
-              const classes = columnClasses(header.column, headers[index - 1]?.column);
+              const classes = columnClasses[header.column.id];
               const sorted = header.column.getIsSorted();
               const label = (
                 <>
@@ -102,9 +107,9 @@ export function LeaderboardTable({ rows, empty }: { rows: LeaderboardRow[]; empt
         )}
         {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id}>
-            {row.getAllCells().map((cell, index, cells) => {
+            {row.getAllCells().map((cell) => {
               const { meta } = cell.column.columnDef;
-              const classes = columnClasses(cell.column, cells[index - 1]?.column);
+              const classes = columnClasses[cell.column.id];
               const value = cell.getValue();
               const bar = meta?.bar && typeof value === "number" ? value : undefined;
               return (

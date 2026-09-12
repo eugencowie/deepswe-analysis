@@ -2,6 +2,7 @@ import rawSnapshot from "../../data/deepswe-v1.1.json" with { type: "json" };
 import rawMapping from "../../data/model-mapping.json" with { type: "json" };
 import rawThroughput from "../../data/openrouter-throughput.json" with { type: "json" };
 import rawTiers from "../../data/tiers.json" with { type: "json" };
+import type { LeaderboardSources } from "./leaderboard.ts";
 import {
   assertMappingCoverage,
   deepsweSnapshotSchema,
@@ -21,3 +22,13 @@ export const throughputSnapshot = throughputSnapshotSchema.parse(rawThroughput);
 export const tiersSnapshot = tiersSnapshotSchema.parse(rawTiers);
 export const tiers = tiersSnapshot.tiers;
 export const familyVendors = readFamilyVendors(modelMapping);
+
+// The one place the live data is assembled for the leaderboard constructor;
+// tests spread this to override a source.
+export const leaderboardSources: LeaderboardSources = {
+  snapshot: deepsweSnapshot,
+  mapping: modelMapping,
+  throughput: throughputSnapshot,
+  tiers,
+  familyVendors,
+};

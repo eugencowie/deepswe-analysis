@@ -1,22 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 import { createLeaderboard } from "../src/data/leaderboard.ts";
-import {
-  deepsweSnapshot,
-  familyVendors,
-  modelMapping,
-  throughputSnapshot,
-  tiers,
-} from "../src/data/sources.ts";
+import { leaderboardSources } from "../src/data/sources.ts";
 
 // The default view: best entries, API rows only (tickets 09 and 22).
-const leaderboard = createLeaderboard({
-  snapshot: deepsweSnapshot,
-  mapping: modelMapping,
-  throughput: throughputSnapshot,
-  tiers,
-  familyVendors,
-});
+const leaderboard = createLeaderboard(leaderboardSources);
 const rowCount = leaderboard.visibleRows(leaderboard.defaultFilters()).length;
 
 test("e2e build renders the table with no failed requests", async ({ page }) => {

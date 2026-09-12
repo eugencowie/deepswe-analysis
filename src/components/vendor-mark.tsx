@@ -1,4 +1,4 @@
-import { cn } from "@/components/ui/utils";
+import { cn } from "cn";
 import { vendorMarkSvgs } from "@/components/vendor-mark-svgs";
 
 export function VendorMark({ vendor, className }: { vendor: string; className?: string }) {

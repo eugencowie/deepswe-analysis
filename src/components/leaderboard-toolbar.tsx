@@ -1,6 +1,6 @@
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
-import { cn } from "@/components/ui/utils";
+import { cn } from "cn";
 import { ModelsPicker } from "@/components/models-picker";
 import { SubscriptionsPicker } from "@/components/subscriptions-picker";
 import {
