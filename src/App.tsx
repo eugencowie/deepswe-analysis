@@ -6,20 +6,12 @@ import { ModeToggle } from "@/components/ui/mode-toggle";
 import { createLeaderboard } from "@/data/leaderboard";
 import {
   deepsweSnapshot,
-  familyVendors,
-  modelMapping,
+  leaderboardSources,
   throughputSnapshot,
-  tiers,
   tiersSnapshot,
 } from "@/data/sources";
 
-const leaderboard = createLeaderboard({
-  snapshot: deepsweSnapshot,
-  mapping: modelMapping,
-  throughput: throughputSnapshot,
-  tiers,
-  familyVendors,
-});
+const leaderboard = createLeaderboard(leaderboardSources);
 
 // The UTC date of a snapshot timestamp, robust to non-UTC offsets in a
 // future refresh (a plain slice would take the offset-local date).

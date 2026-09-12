@@ -2,7 +2,7 @@ import { describe, expect, test } from "vite-plus/test";
 
 import {
   deepsweSnapshot,
-  familyVendors,
+  leaderboardSources as sources,
   modelMapping,
   throughputSnapshot,
   tiers,
@@ -33,13 +33,6 @@ const throughputFixture: ThroughputSnapshot = {
   },
 };
 
-const sources = {
-  snapshot: deepsweSnapshot,
-  mapping: modelMapping,
-  throughput: throughputSnapshot,
-  tiers,
-  familyVendors,
-};
 const live = () => createLeaderboard(sources);
 
 // A family's access routes in row order: the API, then its tiers.
