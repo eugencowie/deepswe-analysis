@@ -21,8 +21,7 @@ type ThemeProviderState = {
   setTheme: (theme: Theme) => void;
 };
 
-// No default: a consumer outside the provider is a wiring bug, not a
-// no-op, so useTheme throws rather than hand out a setter that does nothing.
+// No default: a consumer outside the provider is a wiring bug, not a no-op.
 const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined);
 
 export function ThemeProvider({
