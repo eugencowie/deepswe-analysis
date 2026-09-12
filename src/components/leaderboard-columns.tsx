@@ -15,7 +15,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/components/ui/utils";
+import { cn } from "cn";
 import { VendorMark } from "@/components/vendor-mark";
 import {
   compareModel,

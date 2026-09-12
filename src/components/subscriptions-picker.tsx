@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/components/ui/utils";
+import { cn } from "cn";
 import { VendorMark } from "@/components/vendor-mark";
 import {
   setRoute,

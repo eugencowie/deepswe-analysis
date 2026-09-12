@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/components/ui/utils";
+import { cn } from "cn";
 import { leaderboardTableOptions, type ColumnMeta } from "@/components/leaderboard-columns";
 import type { LeaderboardRow } from "@/data/leaderboard";
 
